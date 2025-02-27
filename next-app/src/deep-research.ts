@@ -98,7 +98,7 @@ async function processSerpResult({
   numFollowUpQuestions?: number;
 }) {
   const contents = compact(result.data.map(item => item.markdown)).map(
-    (content: string) => trimPrompt(content, 25_000),
+    content => trimPrompt(content, 25_000),
   );
   log(`Ran ${query}, found ${contents.length} contents`);
 

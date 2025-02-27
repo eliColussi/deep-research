@@ -1,23 +1,18 @@
 import type { WeddingPlan, PlanFormData } from '@/types/plan'
 
-export async function generateWeddingPlan(formData: PlanFormData): Promise<WeddingPlan> {
-  try {
-    const response = await fetch('/api/generate-plan', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formData),
-    })
+export async function generateWeddingPlan(preferences: PlanFormData): Promise<WeddingPlan> {
+  const response = await fetch('/api/generate-plan', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(preferences),
+  })
 
-    if (!response.ok) {
-      throw new Error('Failed to generate wedding plan')
-    }
-
-    const plan: WeddingPlan = await response.json()
-    return plan
-  } catch (error) {
-    console.error('Error generating wedding plan:', error)
-    throw error
+  if (!response.ok) {
+    const error = await response.text()
+    throw new Error(error || 'Failed to generate wedding plan')
   }
+
+  return response.json()
 }

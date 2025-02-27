@@ -11,7 +11,7 @@ export async function getUserProfile(userId: string) {
     .from('user_profiles')
     .select('*')
     .eq('id', userId)
-    .maybeSingle()
+    .single()
 
   if (error) throw error
   return data
@@ -23,7 +23,7 @@ export async function createOrUpdateUserProfile(userId: string, email: string) {
     .upsert({
       id: userId,
       email,
-      updated_at: new Date().toISOString(),
+      last_login: new Date().toISOString()
     })
     .select()
     .single()
@@ -47,8 +47,7 @@ export async function updateUserPlanCount(userId: string) {
   const { data, error } = await supabase
     .from('user_profiles')
     .update({ 
-      revisions_remaining: (profile.revisions_remaining ?? 2) - 1,
-      updated_at: new Date().toISOString() 
+      revisions_remaining: Math.max(0, (profile.revisions_remaining ?? 2) - 1)
     })
     .eq('id', userId)
     .select()
@@ -64,8 +63,7 @@ export async function saveWeddingPlan(userId: string, plan: WeddingPlan, prefere
     .insert({
       user_id: userId,
       current_plan: plan,
-      initial_preferences: preferences,
-      created_at: new Date().toISOString(),
+      initial_preferences: preferences
     })
     .select()
     .single()
@@ -79,33 +77,10 @@ export async function updateWeddingPlan(userId: string, plan: WeddingPlan, prefe
     .from('wedding_plans')
     .update({
       current_plan: plan,
-      initial_preferences: preferences,
-      updated_at: new Date().toISOString(),
+      initial_preferences: preferences
     })
     .eq('user_id', userId)
     .select()
-    .single()
-
-  if (error) throw error
-  return data
-}
-
-export async function getWeddingPlans(userId: string) {
-  const { data, error } = await supabase
-    .from('wedding_plans')
-    .select('*')
-    .eq('id', userId)
-    .order('created_at', { ascending: false })
-
-  if (error) throw error
-  return data
-}
-
-export async function getWeddingPlan(planId: string) {
-  const { data, error } = await supabase
-    .from('wedding_plans')
-    .select('*')
-    .eq('id', planId)
     .single()
 
   if (error) throw error
