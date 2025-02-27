@@ -4,7 +4,7 @@ import { compact } from 'lodash-es';
 import pLimit from 'p-limit';
 import { z } from 'zod';
 
-import { o3MiniModel, trimPrompt } from './ai/providers';
+import { o3MiniModel, trimPrompt } from './providers';
 import { systemPrompt } from './prompt';
 import { OutputManager } from './output-manager';
 
