@@ -1,5 +1,5 @@
 // ai.ts
-import type { WeddingPlan, PlanFormData } from '@/types/plan'
+import type { WeddingPlan, PlanFormData } from '@/types/plan';
 
 export async function generateWeddingPlan(
   preferences: PlanFormData
