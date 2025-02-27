@@ -1,7 +1,6 @@
 // app/api/generate-plan/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { deepResearch, writeFinalReport } from '@/app/deep-research';
-// If you want to do a simpler approach, you can skip writeFinalReport
+import { deepResearch, writeFinalReport } from '@/utils/ai/deep-research';  // Update this path// If you want to do a simpler approach, you can skip writeFinalReport
 // or only call deepResearch. This is an example.
 import type { PlanFormData } from '@/types/plan';
 

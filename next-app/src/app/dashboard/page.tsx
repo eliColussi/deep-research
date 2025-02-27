@@ -10,8 +10,8 @@ import {
   updateUserPlanCount,
   saveWeddingPlan,
   updateWeddingPlan,
-} from '@/utils/db';
-import { generateWeddingPlan } from '@/utils/ai';
+} from '@/app/utils/db';
+import { generateWeddingPlan } from '@/utils/ai/deep-research';
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
