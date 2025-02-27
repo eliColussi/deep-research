@@ -40,33 +40,35 @@ export default function DashboardPage() {
         }
 
         // Get or create user profile
-        let profile = await getUserProfile(user.id);
-        
-        if (!profile) {
-          profile = await createOrUpdateUserProfile(user.id, user.email!);
+        try {
+          let profile = await getUserProfile(user.id);
+          
           if (!profile) {
-            console.error('Failed to create user profile');
-            router.push('/login');
-            return;
+            console.log('Creating new user profile...');
+            profile = await createOrUpdateUserProfile(user.id, user.email!);
           }
+
+          setUser(user);
+          setRevisionsLeft(profile?.revisions_remaining ?? 2);
+
+          // Get existing plan if any
+          const { data: existingPlan, error: planError } = await supabase
+            .from('wedding_plans')
+            .select('current_plan')
+            .eq('user_id', user.id)
+            .single();
+
+          if (planError && planError.code !== 'PGRST116') { // Ignore 'no rows returned' error
+            console.error('Error fetching plan:', planError);
+          } else if (existingPlan?.current_plan) {
+            setPlan(existingPlan.current_plan as WeddingPlan);
+          }
+
+        } catch (error) {
+          console.error('Error getting/creating profile:', error);
+          // Don't redirect, just log the error and continue
+          // The trigger might still be creating the profile
         }
-
-        setUser(user);
-        setRevisionsLeft(profile.revisions_remaining);
-
-        // Get existing plan if any
-        const { data: existingPlan, error: planError } = await supabase
-          .from('wedding_plans')
-          .select('current_plan')
-          .eq('user_id', user.id)
-          .single();
-
-        if (planError && planError.code !== 'PGRST116') { // Ignore 'no rows returned' error
-          console.error('Error fetching plan:', planError);
-        } else if (existingPlan?.current_plan) {
-          setPlan(existingPlan.current_plan as WeddingPlan);
-        }
-
       } catch (error) {
         console.error('Error in checkUser:', error);
         router.push('/login');
@@ -112,13 +114,10 @@ export default function DashboardPage() {
       }
 
       // Update user's revision count
-      const profile = await updateUserPlanCount(user.id);
-      if (!profile) {
-        throw new Error('Failed to update revision count');
-      }
+      const updatedProfile = await updateUserPlanCount(user.id);
       
       setPlan(newPlan);
-      setRevisionsLeft(profile.revisions_remaining);
+      setRevisionsLeft(updatedProfile.revisions_remaining);
     } catch (error) {
       console.error('Error generating plan:', error);
       setError(error instanceof Error ? error.message : 'An error occurred while generating your plan');

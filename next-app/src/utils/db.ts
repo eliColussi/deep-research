@@ -10,40 +10,61 @@ export async function getUserProfile(userId: string) {
   const { data, error } = await supabase
     .from('user_profiles')
     .select('*')
-    .eq('user_id', userId)
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
+
+export async function createOrUpdateUserProfile(userId: string, email: string) {
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .upsert({
+      id: userId,
+      email,
+      updated_at: new Date().toISOString(),
+    })
+    .select()
     .single()
 
   if (error) throw error
   return data
 }
 
-export async function createOrUpdateUserProfile(userId: string, data: any) {
-  const { error } = await supabase
+export async function updateUserPlanCount(userId: string) {
+  // First get current count
+  const { data: profile, error: getError } = await supabase
     .from('user_profiles')
-    .upsert({
-      user_id: userId,
-      ...data,
-      updated_at: new Date().toISOString(),
+    .select('revisions_remaining')
+    .eq('id', userId)
+    .single()
+
+  if (getError) throw getError
+  if (!profile) throw new Error('Profile not found')
+
+  // Then update with new count
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .update({ 
+      revisions_remaining: (profile.revisions_remaining ?? 2) - 1,
+      updated_at: new Date().toISOString() 
     })
+    .eq('id', userId)
+    .select()
+    .single()
 
   if (error) throw error
+  return data
 }
 
-export async function updateUserPlanCount(userId: string, count: number) {
-  const { error } = await supabase
-    .from('user_profiles')
-    .update({ plans_remaining: count, updated_at: new Date().toISOString() })
-    .eq('user_id', userId)
-
-  if (error) throw error
-}
-
-export async function saveWeddingPlan(userId: string, plan: WeddingPlan) {
+export async function saveWeddingPlan(userId: string, plan: WeddingPlan, preferences: PlanFormData) {
   const { data, error } = await supabase
     .from('wedding_plans')
     .insert({
       user_id: userId,
-      ...plan,
+      current_plan: plan,
+      initial_preferences: preferences,
       created_at: new Date().toISOString(),
     })
     .select()
@@ -53,14 +74,15 @@ export async function saveWeddingPlan(userId: string, plan: WeddingPlan) {
   return data
 }
 
-export async function updateWeddingPlan(planId: string, updates: Partial<WeddingPlan>) {
+export async function updateWeddingPlan(userId: string, plan: WeddingPlan, preferences: PlanFormData) {
   const { data, error } = await supabase
     .from('wedding_plans')
     .update({
-      ...updates,
+      current_plan: plan,
+      initial_preferences: preferences,
       updated_at: new Date().toISOString(),
     })
-    .eq('id', planId)
+    .eq('user_id', userId)
     .select()
     .single()
 
@@ -72,7 +94,7 @@ export async function getWeddingPlans(userId: string) {
   const { data, error } = await supabase
     .from('wedding_plans')
     .select('*')
-    .eq('user_id', userId)
+    .eq('id', userId)
     .order('created_at', { ascending: false })
 
   if (error) throw error
