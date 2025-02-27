@@ -18,17 +18,51 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      // First attempt to sign in
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (authError) {
-      setError(authError.message);
-    } else {
+      if (authError) {
+        setError(authError.message);
+        return;
+      }
+
+      if (!authData.user) {
+        setError('No user data returned');
+        return;
+      }
+
+      // Check if user profile exists
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('id', authData.user.id)
+        .single();
+
+      if (profileError && profileError.code !== 'PGRST116') { // PGRST116 means no rows found
+        console.error('Error checking profile:', profileError);
+        setError('Error checking user profile');
+        return;
+      }
+
+      if (!profile) {
+        // No profile found - redirect to signup
+        setError('Please sign up first to create an account');
+        router.push('/signup');
+        return;
+      }
+
+      // Profile exists, proceed to dashboard
       router.push('/dashboard');
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('An unexpected error occurred');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
