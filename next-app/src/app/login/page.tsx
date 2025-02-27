@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '@/app/lib/supabaseClient';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -17,9 +17,8 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     try {
-      // First attempt to sign in
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -29,7 +28,6 @@ export default function LoginPage() {
         setError(authError.message);
         return;
       }
-
       if (!authData.user) {
         setError('No user data returned');
         return;
@@ -40,26 +38,26 @@ export default function LoginPage() {
         .from('user_profiles')
         .select('id')
         .eq('id', authData.user.id)
-        .single();
+        .maybeSingle();
 
-      if (profileError && profileError.code !== 'PGRST116') { // PGRST116 means no rows found
+      if (profileError) {
         console.error('Error checking profile:', profileError);
         setError('Error checking user profile');
         return;
       }
 
       if (!profile) {
-        // No profile found - redirect to signup
+        // No profile found - direct them to signup or create it automatically
         setError('Please sign up first to create an account');
         router.push('/signup');
         return;
       }
 
-      // Profile exists, proceed to dashboard
+      // If profile exists, proceed to dashboard
       router.push('/dashboard');
-    } catch (error) {
-      console.error('Login error:', error);
-      setError('An unexpected error occurred');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -70,7 +68,12 @@ export default function LoginPage() {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
         <div className="text-center mb-8">
           <div className="w-12 h-12 bg-gradient-to-r from-rose-500 to-teal-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-6 h-6 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
           </div>
@@ -141,5 +144,5 @@ export default function LoginPage() {
         </p>
       </div>
     </main>
-  )
+  );
 }

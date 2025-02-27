@@ -1,10 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '@/app/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import type { WeddingPlan, PlanFormData } from '@/types/plan';
-import { getUserProfile, createOrUpdateUserProfile, updateUserPlanCount, saveWeddingPlan, updateWeddingPlan } from '@/utils/db';
+import {
+  getUserProfile,
+  createOrUpdateUserProfile,
+  updateUserPlanCount,
+  saveWeddingPlan,
+  updateWeddingPlan,
+} from '@/utils/db';
 import { generateWeddingPlan } from '@/utils/ai';
 
 export default function DashboardPage() {
@@ -17,70 +23,68 @@ export default function DashboardPage() {
     guestCount: 0,
     location: '',
     preferences: '',
-    dateRange: ''
+    dateRange: '',
   });
 
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     const checkUser = async () => {
       try {
-        // Check if user is authenticated
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        
-        if (authError) {
-          console.error('Auth error:', authError);
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          router.push('/login');
+          return;
+        }
+        if (!session) {
           router.push('/login');
           return;
         }
 
-        if (!user) {
+        const currentUser = session.user;
+        if (!currentUser) {
+          console.error('No user in session');
           router.push('/login');
           return;
         }
 
         // Get or create user profile
-        try {
-          let profile = await getUserProfile(user.id);
-          
-          if (!profile) {
-            console.log('Creating new user profile...');
-            profile = await createOrUpdateUserProfile(user.id, user.email!);
-          }
-
-          setUser(user);
-          setRevisionsLeft(profile?.revisions_remaining ?? 2);
-
-          // Get existing plan if any
-          const { data: existingPlan, error: planError } = await supabase
-            .from('wedding_plans')
-            .select('current_plan')
-            .eq('user_id', user.id)
-            .single();
-
-          if (planError && planError.code !== 'PGRST116') { // Ignore 'no rows returned' error
-            console.error('Error fetching plan:', planError);
-          } else if (existingPlan?.current_plan) {
-            setPlan(existingPlan.current_plan as WeddingPlan);
-          }
-
-        } catch (error) {
-          console.error('Error getting/creating profile:', error);
-          // Don't redirect, just log the error and continue
-          // The trigger might still be creating the profile
+        let profile = await getUserProfile(currentUser.id);
+        if (!profile) {
+          profile = await createOrUpdateUserProfile(currentUser.id, currentUser.email!);
         }
-      } catch (error) {
-        console.error('Error in checkUser:', error);
+
+        setUser(currentUser);
+        setRevisionsLeft(profile.revisions_remaining ?? 2);
+
+        // Check for existing plan
+        const { data: existingPlan, error: planError } = await supabase
+          .from('wedding_plans')
+          .select('current_plan')
+          .eq('user_id', currentUser.id)
+          .maybeSingle();
+
+        if (planError) {
+          console.error('Error fetching plan:', planError);
+        } else if (existingPlan?.current_plan) {
+          setPlan(existingPlan.current_plan as WeddingPlan);
+        }
+      } catch (err) {
+        console.error('Error in checkUser:', err);
         router.push('/login');
       }
     };
 
     checkUser();
-  }, [router]); // Add router to dependency array
+  }, [router]);
 
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) {
       setError('Please log in to continue');
@@ -89,7 +93,7 @@ export default function DashboardPage() {
 
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // Check if user has revisions left
       if (revisionsLeft <= 0) {
@@ -97,40 +101,34 @@ export default function DashboardPage() {
         return;
       }
 
-      // Generate AI wedding plan
+      // Generate plan
       const newPlan = await generateWeddingPlan(formData);
 
-      // Update plan in database
+      // Save or update plan
       if (plan) {
         const updated = await updateWeddingPlan(user.id, newPlan, formData);
-        if (!updated) {
-          throw new Error('Failed to update wedding plan');
-        }
+        if (!updated) throw new Error('Failed to update wedding plan');
       } else {
         const saved = await saveWeddingPlan(user.id, newPlan, formData);
-        if (!saved) {
-          throw new Error('Failed to save wedding plan');
-        }
+        if (!saved) throw new Error('Failed to save wedding plan');
       }
 
-      // Update user's revision count
+      // Decrement revision count
       const updatedProfile = await updateUserPlanCount(user.id);
-      
       setPlan(newPlan);
       setRevisionsLeft(updatedProfile.revisions_remaining);
-    } catch (error) {
-      console.error('Error generating plan:', error);
-      setError(error instanceof Error ? error.message : 'An error occurred while generating your plan');
+    } catch (err: any) {
+      console.error('Error generating plan:', err);
+      setError(err.message || 'An error occurred while generating your plan');
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   if (!user) return null;
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
-      {/* Header */}
       <header className="border-b border-pink-100 bg-white/50 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <h1 className="text-xl font-semibold bg-gradient-to-r from-pink-500 to-purple-500 text-transparent bg-clip-text">
@@ -146,13 +144,16 @@ export default function DashboardPage() {
       </header>
 
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
-        {/* Error Display */}
         {error && (
           <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
               <div className="ml-3">
@@ -161,14 +162,14 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
-        {/* Revisions Counter */}
+
         <div className="bg-white/50 backdrop-blur-sm rounded-full px-4 py-2 inline-block">
           <p className="text-sm text-gray-600">
-            Revisions remaining: <span className="font-semibold text-purple-600">{revisionsLeft} of 2</span>
+            Revisions remaining:{' '}
+            <span className="font-semibold text-purple-600">{revisionsLeft} of 2</span>
           </p>
         </div>
 
-        {/* Main Content */}
         <div className="bg-white rounded-2xl shadow-sm border border-pink-100 p-8">
           {!plan ? (
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -178,7 +179,9 @@ export default function DashboardPage() {
                   <select
                     className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
                     value={formData.budget}
-                    onChange={e => setFormData(prev => ({ ...prev, budget: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, budget: e.target.value }))
+                    }
                   >
                     <option value="">Select budget</option>
                     <option value="10-20k">$10,000 - $20,000</option>
@@ -193,7 +196,12 @@ export default function DashboardPage() {
                     type="number"
                     className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
                     value={formData.guestCount}
-                    onChange={e => setFormData(prev => ({ ...prev, guestCount: parseInt(e.target.value) }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        guestCount: parseInt(e.target.value),
+                      }))
+                    }
                   />
                 </div>
               </div>
@@ -203,17 +211,23 @@ export default function DashboardPage() {
                   type="text"
                   className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
                   value={formData.location}
-                  onChange={e => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, location: e.target.value }))
+                  }
                   placeholder="City, State or Country"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Additional Preferences</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Additional Preferences
+                </label>
                 <textarea
                   className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
                   rows={4}
                   value={formData.preferences}
-                  onChange={e => setFormData(prev => ({ ...prev, preferences: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, preferences: e.target.value }))
+                  }
                   placeholder="Tell us about your dream wedding..."
                 />
               </div>
