@@ -17,8 +17,7 @@ const openai = createOpenAI({
 const customModel = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
 // Models
-export const o3MiniModel = openai(customModel, {
-  reasoningEffort: customModel.startsWith('gpt-4o') ? 'medium' : undefined,
+export const gpt4oModel = openai('gpt-4o-mini', { /* no reasoning or structured props */
   structuredOutputs: true,
 });
 
