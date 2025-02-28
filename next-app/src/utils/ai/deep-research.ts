@@ -1,3 +1,5 @@
+// deep-research.ts
+
 import FirecrawlApp, { SearchResponse } from '@mendable/firecrawl-js';
 import { generateObject } from 'ai';
 import { compact } from 'lodash-es';
@@ -8,10 +10,7 @@ import { gpt4oModel, trimPrompt } from './providers';
 import { systemPrompt } from './prompt';
 import { OutputManager } from './output-manager';
 
-// Initialize output manager for coordinated console/progress output
 const output = new OutputManager();
-
-// Replace console.log with output.log
 function log(...args: any[]) {
   output.log(...args);
 }
@@ -31,103 +30,88 @@ type ResearchResult = {
   visitedUrls: string[];
 };
 
-// increase this if you have higher API rate limits
-const ConcurrencyLimit = 2;
-
-// Initialize Firecrawl with optional API key and optional base url
+// Lower concurrency to 1 => we run only one query at a time
+// to help ensure we don't exceed 10 requests/min
+const ConcurrencyLimit = 1;
 
 const firecrawl = new FirecrawlApp({
   apiKey: process.env.FIRECRAWL_KEY ?? '',
   apiUrl: process.env.FIRECRAWL_BASE_URL,
 });
 
-// take en user query, return a list of SERP queries
+// Step A: Generate SERP queries
 async function generateSerpQueries({
   query,
-  numQueries = 3,
+  numQueries = 2,
   learnings,
 }: {
   query: string;
   numQueries?: number;
-
-  // optional, if provided, the research will continue from the last learning
   learnings?: string[];
 }) {
   const res = await generateObject({
     model: gpt4oModel,
     system: systemPrompt(),
-    prompt: `Given the following prompt from the user, generate a list of SERP queries to research the topic. Return a maximum of ${numQueries} queries, but feel free to return less if the original prompt is clear. Make sure each query is unique and not similar to each other: <prompt>${query}</prompt>\n\n${
-      learnings
-        ? `Here are some learnings from previous research, use them to generate more specific queries: ${learnings.join(
-            '\n',
-          )}`
-        : ''
-    }`,
+    prompt: trimPrompt(`
+We have the user's wedding plan prompt:
+<mainPrompt>${query}</mainPrompt>
+
+Generate up to ${numQueries} SERP queries focusing on phone numbers, user reviews, star ratings, advanced details. 
+If prior learnings exist, incorporate them:
+${(learnings || []).join('\n')}
+`),
     schema: z.object({
-      queries: z
-        .array(
-          z.object({
-            query: z.string().describe('The SERP query'),
-            researchGoal: z
-              .string()
-              .describe(
-                'First talk about the goal of the research that this query is meant to accomplish, then go deeper into how to advance the research once the results are found, mention additional research directions. Be as specific as possible, especially for additional research directions.',
-              ),
-          }),
-        )
-        .describe(`List of SERP queries, max of ${numQueries}`),
+      queries: z.array(
+        z.object({
+          query: z.string(),
+          researchGoal: z.string(),
+        }),
+      ),
     }),
   });
-  log(
-    `Created ${res.object.queries.length} queries`,
-    res.object.queries,
-  );
-
+  log(`Created ${res.object.queries.length} queries`, res.object.queries);
   return res.object.queries.slice(0, numQueries);
 }
 
+// Step B: Process each SERP result
 async function processSerpResult({
   query,
   result,
   numLearnings = 3,
-  numFollowUpQuestions = 3,
+  numFollowUpQuestions = 2,
 }: {
   query: string;
   result: SearchResponse;
   numLearnings?: number;
   numFollowUpQuestions?: number;
 }) {
-  const contents = compact(result.data.map(item => item.markdown)).map(
-    content => trimPrompt(content, 25_000),
+  const contents = compact(result.data.map(item => item.markdown)).map(c =>
+    trimPrompt(c, 25_000),
   );
   log(`Ran ${query}, found ${contents.length} contents`);
 
   const res = await generateObject({
     model: gpt4oModel,
-    abortSignal: AbortSignal.timeout(60_000),
     system: systemPrompt(),
-    prompt: `Given the following contents from a SERP search for the query <query>${query}</query>, generate a list of learnings from the contents. Return a maximum of ${numLearnings} learnings, but feel free to return less if the contents are clear. Make sure each learning is unique and not similar to each other. The learnings should be concise and to the point, as detailed and information dense as possible. Make sure to include any entities like people, places, companies, products, things, etc in the learnings, as well as any exact metrics, numbers, or dates. The learnings will be used to research the topic further.\n\n<contents>${contents
-      .map(content => `<content>\n${content}\n</content>`)
-      .join('\n')}</contents>`,
+    prompt: trimPrompt(`
+Given these SERP contents for <${query}>, 
+extract up to ${numLearnings} new learnings focusing on phone numbers, star ratings, user reviews, advanced wedding insights, 
+and up to ${numFollowUpQuestions} follow-up questions:
+
+<contents>
+${contents.map(c => `<content>\n${c}\n</content>`).join('\n')}
+</contents>
+`),
     schema: z.object({
-      learnings: z
-        .array(z.string())
-        .describe(`List of learnings, max of ${numLearnings}`),
-      followUpQuestions: z
-        .array(z.string())
-        .describe(
-          `List of follow-up questions to research the topic further, max of ${numFollowUpQuestions}`,
-        ),
+      learnings: z.array(z.string()),
+      followUpQuestions: z.array(z.string()),
     }),
   });
-  log(
-    `Created ${res.object.learnings.length} learnings`,
-    res.object.learnings,
-  );
-
+  log(`Created ${res.object.learnings.length} learnings`, res.object.learnings);
   return res.object;
 }
 
+// Step C: Final report
 export async function writeFinalReport({
   prompt,
   learnings,
@@ -138,28 +122,33 @@ export async function writeFinalReport({
   visitedUrls: string[];
 }) {
   const learningsString = trimPrompt(
-    learnings
-      .map(learning => `<learning>\n${learning}\n</learning>`)
-      .join('\n'),
+    learnings.map(ln => `<learning>\n${ln}\n</learning>`).join('\n'),
     150_000,
   );
 
   const res = await generateObject({
     model: gpt4oModel,
     system: systemPrompt(),
-    prompt: `Given the following prompt from the user, write a final report on the topic using the learnings from research. Make it as as detailed as possible, aim for 3 or more pages, include ALL the learnings from research:\n\n<prompt>${prompt}</prompt>\n\nHere are all the learnings from previous research:\n\n<learnings>\n${learningsString}\n</learnings>`,
+    prompt: trimPrompt(`
+We have the user's prompt plus these combined learnings. 
+Write a final wedding plan with phone numbers, user reviews, star ratings, hidden gems, advanced deals, etc.:
+
+<prompt>${prompt}</prompt>
+
+<allLearnings>
+${learningsString}
+</allLearnings>
+`),
     schema: z.object({
-      reportMarkdown: z
-        .string()
-        .describe('Final report on the topic in Markdown'),
+      reportMarkdown: z.string(),
     }),
   });
 
-  // Append the visited URLs section to the report
   const urlsSection = `\n\n## Sources\n\n${visitedUrls.map(url => `- ${url}`).join('\n')}`;
   return res.object.reportMarkdown + urlsSection;
 }
 
+// Step D: Orchestrate
 export async function deepResearch({
   query,
   breadth,
@@ -183,7 +172,7 @@ export async function deepResearch({
     totalQueries: 0,
     completedQueries: 0,
   };
-  
+
   const reportProgress = (update: Partial<ResearchProgress>) => {
     Object.assign(progress, update);
     onProgress?.(progress);
@@ -194,12 +183,11 @@ export async function deepResearch({
     learnings,
     numQueries: breadth,
   });
-  
   reportProgress({
     totalQueries: serpQueries.length,
-    currentQuery: serpQueries[0]?.query
+    currentQuery: serpQueries[0]?.query,
   });
-  
+
   const limit = pLimit(ConcurrencyLimit);
 
   const results = await Promise.all(
@@ -207,12 +195,11 @@ export async function deepResearch({
       limit(async () => {
         try {
           const result = await firecrawl.search(serpQuery.query, {
-            timeout: 15000,
+            timeout: 30000,
             limit: 5,
             scrapeOptions: { formats: ['markdown'] },
           });
 
-          // Collect URLs from this search
           const newUrls = compact(result.data.map(item => item.url));
           const newBreadth = Math.ceil(breadth / 2);
           const newDepth = depth - 1;
@@ -220,16 +207,12 @@ export async function deepResearch({
           const newLearnings = await processSerpResult({
             query: serpQuery.query,
             result,
-            numFollowUpQuestions: newBreadth,
           });
           const allLearnings = [...learnings, ...newLearnings.learnings];
           const allUrls = [...visitedUrls, ...newUrls];
 
           if (newDepth > 0) {
-            log(
-              `Researching deeper, breadth: ${newBreadth}, depth: ${newDepth}`,
-            );
-
+            log(`Researching deeper => breadth: ${newBreadth}, depth: ${newDepth}`);
             reportProgress({
               currentDepth: newDepth,
               currentBreadth: newBreadth,
@@ -238,9 +221,10 @@ export async function deepResearch({
             });
 
             const nextQuery = `
-            Previous research goal: ${serpQuery.researchGoal}
-            Follow-up research directions: ${newLearnings.followUpQuestions.map(q => `\n${q}`).join('')}
-          `.trim();
+Previous research goal: ${serpQuery.researchGoal}
+Follow-up directions:
+${newLearnings.followUpQuestions.map(q => `- ${q}`).join('\n')}
+`.trim();
 
             return deepResearch({
               query: nextQuery,
@@ -251,6 +235,7 @@ export async function deepResearch({
               onProgress,
             });
           } else {
+            // done
             reportProgress({
               currentDepth: 0,
               completedQueries: progress.completedQueries + 1,
@@ -261,19 +246,13 @@ export async function deepResearch({
               visitedUrls: allUrls,
             };
           }
-        } catch (e: any) {
-          if (e.message && e.message.includes('Timeout')) {
-            log(
-              `Timeout error running query: ${serpQuery.query}: `,
-              e,
-            );
+        } catch (err: any) {
+          if (err.message?.includes('Timeout')) {
+            log(`Timeout error running query: ${serpQuery.query}`, err);
           } else {
-            log(`Error running query: ${serpQuery.query}: `, e);
+            log(`Error running query: ${serpQuery.query}`, err);
           }
-          return {
-            learnings: [],
-            visitedUrls: [],
-          };
+          return { learnings: [], visitedUrls: [] };
         }
       }),
     ),

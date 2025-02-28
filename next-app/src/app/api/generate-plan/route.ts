@@ -1,10 +1,12 @@
 // app/api/generate-plan/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { deepResearch, writeFinalReport } from '@/utils/ai/deep-research';  // Update this path// If you want to do a simpler approach, you can skip writeFinalReport
-// or only call deepResearch. This is an example.
+import { deepResearch, writeFinalReport } from '@/utils/ai/deep-research';
 import type { PlanFormData } from '@/types/plan';
 
-// Build a simple "prompt" from the user's wedding preferences
+/**
+ * Build a thorough prompt from the user's wedding preferences,
+ * referencing phone numbers, reviews, star ratings, etc.
+ */
 function buildWeddingPrompt(preferences: PlanFormData) {
   return `
 User wants a wedding plan with:
@@ -13,41 +15,45 @@ User wants a wedding plan with:
 - Location: ${preferences.location}
 - Additional preferences: ${preferences.preferences}
 - Date range: ${preferences.dateRange}
+
+Preferred Season: ${preferences.season || '(not specified)'}
+Wedding Style: ${preferences.weddingStyle || '(not specified)'}
+Color Palette: ${preferences.colorPalette || '(not specified)'}
+
+We want extremely detailed research focusing on phone numbers, star ratings, user reviews,
+niche local info, up-to-date pricing, hidden gems, and cutting-edge wedding ideas.
 `;
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json() as PlanFormData;
+    // 1) Parse request body
+    const body = (await req.json()) as PlanFormData;
 
-    // 1) Construct a short “prompt” for deepResearch
+    // 2) Build an extremely thorough prompt
     const prompt = buildWeddingPrompt(body);
 
-    // 2) Run your deepResearch code with some fixed “breadth” and “depth”
-    //    If you want a single pass, keep them small. If you want more extensive, increase them.
+    // 3) Control how many queries we run (breadth) & recursion depth
+    //    Adjust to your usage & rate-limit constraints
     const breadth = 2;
-    const depth = 1;
+    const depth = 2;
 
-    // This triggers your SERP-based logic, so Firecrawl will attempt to search the web
+    // 4) Run the deep research with Serper-based search
     const { learnings, visitedUrls } = await deepResearch({
       query: prompt,
       breadth,
       depth,
-      // Optionally define an onProgress callback if you want to log progress
+      // Optionally define onProgress if you want logs
     });
 
-    // 3) Optionally produce a final “report” from the agent
-    //    If you just want the “learnings,” skip writeFinalReport.
+    // 5) Produce a final “report” from the agent
     const reportMarkdown = await writeFinalReport({
       prompt,
       learnings,
       visitedUrls,
     });
 
-    // 4) For the front end, you might parse or transform the “reportMarkdown” 
-    //    into a structured object if you want. For now, let's return the raw text.
-    //    The "WeddingPlan" could be the entire markdown or a JSON structure 
-    //    you produce in writeFinalReport.
+    // 6) Return the plan
     return NextResponse.json({
       markdownPlan: reportMarkdown,
       learnings,
@@ -55,9 +61,8 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: any) {
     console.error('Error generating plan:', err);
-    return new NextResponse(
-      err.message || 'Failed to generate wedding plan',
-      { status: 500 },
-    );
+    return new NextResponse(err.message || 'Failed to generate wedding plan', {
+      status: 500,
+    });
   }
 }

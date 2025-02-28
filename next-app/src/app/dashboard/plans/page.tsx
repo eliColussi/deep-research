@@ -79,7 +79,7 @@ export default function PlansPage() {
       {/* If success=1 in the query, show a success message */}
       {successParam === '1' && (
         <div className="flex items-center gap-2 mb-4 bg-green-50 border-l-4 border-green-400 p-4 rounded-md">
-          <BsCheckCircleFill className="text-green-600" size={20} />
+          <BsCheckCircleFill color="#059669" size={20} />
           <span className="text-sm text-green-700">
             Plan has been saved successfully!
           </span>
@@ -87,7 +87,7 @@ export default function PlansPage() {
       )}
 
       <h1 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <GiDiamondRing className="text-pink-500" />
+        <GiDiamondRing color="#ec4899" />
         My Wedding Plans
       </h1>
 
@@ -106,7 +106,7 @@ export default function PlansPage() {
           {plans.map((plan) => (
             <div key={plan.id} className="bg-white p-4 rounded-md shadow-sm border">
               <div className="flex items-center gap-2">
-                <GiDiamondRing className="text-pink-500" size={24} />
+                <GiDiamondRing color="#ec4899" size={24} />
                 <h2 className="font-bold text-gray-800">
                   Plan <span className="text-xs text-gray-500">({plan.id})</span>
                 </h2>
@@ -114,12 +114,12 @@ export default function PlansPage() {
               {/* If your "plan" is stored in plan.current_plan or plan.initial_preferences */}
               <div className="mt-2 text-sm text-gray-700 space-y-1">
                 <p>
-                  <FaMoneyBillWave className="inline-block text-green-500 mr-1" />
+                  <span className="inline-block mr-1"><FaMoneyBillWave color="#10b981" /></span>
                   <strong>Budget:</strong>{' '}
                   {plan.initial_preferences?.budget || 'N/A'}
                 </p>
                 <p>
-                  <FaMapMarkerAlt className="inline-block text-purple-500 mr-1" />
+                  <span className="inline-block mr-1"><FaMapMarkerAlt color="#a855f7" /></span>
                   <strong>Location:</strong>{' '}
                   {plan.initial_preferences?.location || 'N/A'}
                 </p>

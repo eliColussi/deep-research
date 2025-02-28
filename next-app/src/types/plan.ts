@@ -1,10 +1,13 @@
 export interface WeddingPlan {
+  id: string;
   venue: string;
   decor: string;
   timeline: string;
   vendors: string;
   budget: string;
   recommendations: string;
+  initial_preferences?: PlanFormData;
+  user_id: string;
 }
 
 export interface PlanFormData {
@@ -13,6 +16,8 @@ export interface PlanFormData {
   location: string;
   preferences: string;
   dateRange: string;
-  style?: string;
   season?: string;
+  weddingStyle?: string;
+  colorPalette?: string;
 }
+

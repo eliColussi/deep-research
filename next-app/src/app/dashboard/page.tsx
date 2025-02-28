@@ -12,24 +12,30 @@ import {
   updateWeddingPlan,
 } from '@/utils/db';
 import { generateWeddingPlan } from '@/utils/ai/ai';
-import NavBar from './navBar'; // <--- import your new NavBar
+import NavBar from './navBar'; // import your existing NavBar
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [revisionsLeft, setRevisionsLeft] = useState(2);
   const [plan, setPlan] = useState<WeddingPlan | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Extended form data for a more detailed plan
   const [formData, setFormData] = useState<PlanFormData>({
     budget: '',
     guestCount: 0,
     location: '',
     preferences: '',
     dateRange: '',
+    season: '', // e.g. "spring"
+    weddingStyle: '', // e.g. "Classic"
+    colorPalette: '', // e.g. "pastel"
   });
 
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  // Check user session
   useEffect(() => {
     const checkUser = async () => {
       try {
@@ -85,6 +91,7 @@ export default function DashboardPage() {
     checkUser();
   }, [router]);
 
+  // Handle form submission
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) {
@@ -101,8 +108,10 @@ export default function DashboardPage() {
         return;
       }
 
+      // Generate AI wedding plan
       const newPlan = await generateWeddingPlan(formData);
 
+      // Save or update
       if (plan) {
         const updated = await updateWeddingPlan(user.id, newPlan, formData);
         if (!updated) throw new Error('Failed to update wedding plan');
@@ -111,6 +120,7 @@ export default function DashboardPage() {
         if (!saved) throw new Error('Failed to save wedding plan');
       }
 
+      // Decrement revision count
       const updatedProfile = await updateUserPlanCount(user.id);
       setPlan(newPlan);
       setRevisionsLeft(updatedProfile.revisions_remaining);
@@ -126,6 +136,7 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
+      {/* Header */}
       <header className="border-b border-pink-100 bg-white/50 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <h1 className="text-xl font-semibold bg-gradient-to-r from-pink-500 to-purple-500 text-transparent bg-clip-text">
@@ -140,15 +151,16 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Our new NavBar from Radix UI */}
+      {/* NavBar */}
       <NavBar />
 
+      {/* Main Content */}
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+        {/* Error Display */}
         {error && (
           <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
             <div className="flex">
               <div className="flex-shrink-0">
-                {/* Some error icon */}
                 <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
                   <path
                     fillRule="evenodd"
@@ -164,6 +176,7 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Revisions Counter */}
         <div className="bg-white/50 backdrop-blur-sm rounded-full px-4 py-2 inline-block">
           <p className="text-sm text-gray-600">
             Revisions remaining:{' '}
@@ -171,12 +184,17 @@ export default function DashboardPage() {
           </p>
         </div>
 
+        {/* Plan Form / Plan Display */}
         <div className="bg-white rounded-2xl shadow-sm border border-pink-100 p-8">
           {!plan ? (
+            /* Form Section */
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Budget & Guest Count */}
               <div className="grid gap-6 sm:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Budget Range</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Budget Range
+                  </label>
                   <select
                     className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
                     value={formData.budget}
@@ -185,14 +203,17 @@ export default function DashboardPage() {
                     }
                   >
                     <option value="">Select budget</option>
-                    <option value="10-20k">$10,000 - $20,000</option>
-                    <option value="20-30k">$20,000 - $30,000</option>
-                    <option value="30-50k">$30,000 - $50,000</option>
-                    <option value="50k+">$50,000+</option>
+                    <option value="10-20k">💰 $10,000 - $20,000</option>
+                    <option value="20-30k">💰 $20,000 - $30,000</option>
+                    <option value="30-50k">💰 $30,000 - $50,000</option>
+                    <option value="50k+">💰 $50,000+</option>
                   </select>
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Guest Count</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Guest Count
+                  </label>
                   <input
                     type="number"
                     className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
@@ -203,21 +224,106 @@ export default function DashboardPage() {
                         guestCount: parseInt(e.target.value),
                       }))
                     }
+                    placeholder="E.g. 100"
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                <input
-                  type="text"
-                  className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
-                  value={formData.location}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, location: e.target.value }))
-                  }
-                  placeholder="City, State or Country"
-                />
+
+              {/* Location & Date Range */}
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
+                    value={formData.location}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, location: e.target.value }))
+                    }
+                    placeholder="City, State or Country"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date Range
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
+                    value={formData.dateRange}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, dateRange: e.target.value }))
+                    }
+                    placeholder="e.g. June 2025 or a specific date"
+                  />
+                </div>
               </div>
+
+              {/* Season & Wedding Style */}
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Preferred Season
+                  </label>
+                  <select
+                    className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
+                    value={formData.season}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, season: e.target.value }))
+                    }
+                  >
+                    <option value="">Select season</option>
+                    <option value="spring">🌸 Spring</option>
+                    <option value="summer">🌞 Summer</option>
+                    <option value="fall">🍂 Fall</option>
+                    <option value="winter">❄️ Winter</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Wedding Style
+                  </label>
+                  <select
+                    className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
+                    value={formData.weddingStyle}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, weddingStyle: e.target.value }))
+                    }
+                  >
+                    <option value="">Select style</option>
+                    <option value="classic">✨ Classic</option>
+                    <option value="boho">🌿 Boho</option>
+                    <option value="modern">💎 Modern</option>
+                    <option value="rustic">🏵 Rustic</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Color Palette */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Color Palette
+                </label>
+                <select
+                  className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
+                  value={formData.colorPalette}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, colorPalette: e.target.value }))
+                  }
+                >
+                  <option value="">Select palette</option>
+                  <option value="pastel">🌈 Pastel</option>
+                  <option value="vibrant">🌟 Vibrant</option>
+                  <option value="neutral">🤍 Neutral</option>
+                  <option value="dark">🌑 Dark</option>
+                </select>
+              </div>
+
+              {/* Additional Preferences */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Additional Preferences
@@ -232,6 +338,8 @@ export default function DashboardPage() {
                   placeholder="Tell us about your dream wedding..."
                 />
               </div>
+
+              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={isLoading}
@@ -241,6 +349,7 @@ export default function DashboardPage() {
               </button>
             </form>
           ) : (
+            /* If plan already exists, show the plan details */
             <div className="space-y-6">
               <div className="prose prose-pink max-w-none">
                 <h2 className="text-2xl font-semibold text-gray-900">Your Wedding Plan</h2>
