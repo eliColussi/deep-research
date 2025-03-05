@@ -52,14 +52,29 @@ const config: Config = {
   },
   plugins: [require('daisyui')],
   daisyui: {
-    themes: ['light', 'dark'],
-    darkTheme: 'dark',
+    themes: [
+      {
+        wedding: {
+          "primary": "#f43f5e",
+          "secondary": "#f9a8d4",
+          "accent": "#1dcdbc",
+          "neutral": "#2b3440",
+          "base-100": "#ffffff",
+          "info": "#3abff8",
+          "success": "#36d399",
+          "warning": "#fbbd23",
+          "error": "#f87272",
+        },
+      },
+      "light",
+    ],
+    darkTheme: "light",
     base: true,
     styled: true,
     utils: true,
-    prefix: '',
+    prefix: "",
     logs: false,
-    themeRoot: ':root',
+    themeRoot: ":root",
   },
 };
 

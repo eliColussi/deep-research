@@ -1,0 +1,40 @@
+/* Custom styling for the toggle and pricing section */
+
+/* Override DaisyUI toggle styles globally */
+:global(.toggle) {
+  --tglbg: white;
+  height: 1.75rem !important;
+  width: 3.5rem !important;
+  background-color: #d1d5db !important;
+  border-color: #d1d5db !important;
+}
+
+:global(.toggle:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+:global(.toggle:checked) {
+  background-color: #d1d5db !important;
+  border-color: #d1d5db !important;
+}
+
+:global(.toggle:checked ~ .toggle-mark) {
+  background-color: white !important;
+}
+
+:global(.toggle-mark) {
+  background-color: white !important;
+}
+
+/* Ensure the toggle handle is white and properly sized */
+:global(.toggle:after) {
+  background-color: white !important;
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+}
+
+/* Fix cursor pointer on toggle label */
+:global(label.cursor-pointer) {
+  cursor: pointer !important;
+}

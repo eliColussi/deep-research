@@ -2,6 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom toggle styles */
+.toggle {
+  --tglbg: white !important;
+  height: 1.75rem !important;
+  width: 3.5rem !important;
+  background-color: #d1d5db !important;
+  border-color: #d1d5db !important;
+}
+
+.toggle:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.toggle:checked {
+  background-color: #d1d5db !important;
+  border-color: #d1d5db !important;
+}
+
+.toggle:after {
+  background-color: white !important;
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;

@@ -2,179 +2,238 @@
 
 import React, { useState } from 'react';
 import { useUser } from '@supabase/auth-helpers-react';
-// import Image from 'next/image';
-// import logo from '@/app/icon.png';
+import { Switch, styled } from '@mui/material';
 
-/**
- * Defines a single subscription plan.
- */
+// Custom styled Material UI Switch to match the design exactly as in the image
+const MaterialUISwitch = styled(Switch)(({ theme }) => ({
+  width: 60,
+  height: 30,
+  padding: 0,
+  '& .MuiSwitch-switchBase': {
+    margin: 3,
+    padding: 0,
+    transform: 'translateX(0)',
+    '&.Mui-checked': {
+      color: '#fff',
+      transform: 'translateX(30px)',
+      '& + .MuiSwitch-track': {
+        opacity: 1,
+        backgroundColor: '#d1d5db',
+        borderColor: '#d1d5db',
+      },
+    },
+  },
+  '& .MuiSwitch-thumb': {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    boxShadow: '0 2px 4px 0 rgba(0,0,0,0.1)',
+  },
+  '& .MuiSwitch-track': {
+    opacity: 1,
+    backgroundColor: '#d1d5db',
+    borderRadius: 15,
+    border: '1px solid #d1d5db',
+  },
+}));
+
 export interface Plan {
-  link: string;
-  priceId: string;
+  name: string;
   price: number;
   duration: string;
+  description: string;
+  features: string[];
+  link: string;
+  priceId: string;
+  highlight?: boolean;
 }
 
-/**
- * Hard-coded plans. We assume there are at least two items in this array,
- * so we can do `plans[0]!` or `plans[1]!` without errors.
- */
 export const plans: Plan[] = [
   {
+    name: 'Essential',
+    price: 19,
+    duration: '/month',
+    description: 'Perfect for couples just starting their planning journey',
+    features: [
+      'AI Wedding Planning Assistant',
+      'Basic Timeline Management',
+      'Guest List Management',
+      'Budget Tracking',
+      'Vendor Directory Access',
+    ],
     link:
       process.env.NODE_ENV === 'development'
         ? 'https://example-dev-monthly-link.com'
         : 'https://example-prod-monthly-link.com',
     priceId: 'dev_monthly_price_id',
-    price: 19,
-    duration: '/month',
   },
   {
+    name: 'Premium',
+    price: 99,
+    duration: '/year',
+    description: 'Comprehensive planning tools for your perfect day',
+    features: [
+      'Everything in Essential, plus:',
+      'Advanced AI Planning Features',
+      'Premium Vendor Recommendations',
+      'Custom Website Builder',
+      'Priority Support',
+      'Unlimited Guest Management',
+    ],
     link:
       process.env.NODE_ENV === 'development'
         ? 'https://example-dev-yearly-link.com'
         : 'https://example-prod-yearly-link.com',
     priceId: 'dev_yearly_price_id',
-    price: 99,
-    duration: '/year',
+    highlight: true,
   },
 ];
 
 const Pricing: React.FC = () => {
-  // Grabs the currently signed-in user from Supabase
   const user = useUser();
+  const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>('monthly');
 
-  // Default to the first plan in the array. The "!" tells TS "we know it's not undefined."
-  const [plan, setPlan] = useState<Plan>(plans[0]!);
+  // Choose the plan based on toggle state
+  const selectedPlan = billingInterval === 'monthly' ? plans[0]! : plans[1]!;
 
   return (
-    <section id="pricing">
-      <div className="py-24 px-8 max-w-5xl mx-auto">
-        <div className="flex flex-col text-center w-full mb-20">
-          <p className="font-medium text-primary mb-5">Pricing</p>
-          <h2 className="font-bold text-3xl lg:text-5xl tracking-tight">
-            Hello YouTube
+    <section
+      id="pricing"
+      className="py-32 bg-gradient-to-br from-gray-50 to-gray-100"
+    >
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="text-center space-y-2 mb-16">
+          <p className="text-rose-500 font-medium uppercase tracking-wide text-sm">
+            PRICING
+          </p>
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+            Plans for every wedding journey 💍
           </h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Choose the perfect plan to make your special day truly memorable
+          </p>
         </div>
 
-        <div className="relative flex justify-center flex-col lg:flex-row items-center lg:items-stretch gap-8">
-          <div className="w-full max-w-lg">
-            <div className="relative flex flex-col h-full gap-5 lg:gap-8 z-10 bg-base-100 p-8 rounded-xl">
-              {/* Toggle between monthly vs. yearly */}
-              <div className="flex items-center gap-8">
-                <div
-                  className="flex items-center gap-2 cursor-pointer"
-                  onClick={() => setPlan(plans[0]!)}
-                >
-                  <input
-                    type="radio"
-                    name="pricing"
-                    className="radio"
-                    checked={plan.price === 19}
-                    readOnly
-                  />
-                  <span>Pay monthly</span>
+        {/* Pricing Toggle - Material UI */}
+        <div className="flex flex-col items-center justify-center mt-16 mb-12">
+          <div className="flex items-center justify-center gap-10">
+            <span
+              className={`font-bold text-lg cursor-pointer transition-colors ${
+                billingInterval === 'yearly' ? 'text-gray-800' : 'text-gray-400'
+              }`}
+              onClick={() => setBillingInterval('yearly')}
+              style={{ userSelect: 'none' }}
+            >
+              Annually
+            </span>
+
+            <div className="bg-gray-100 p-1 rounded-full flex items-center justify-center shadow-sm">
+              <MaterialUISwitch
+                checked={billingInterval === 'monthly'}
+                onChange={() =>
+                  setBillingInterval((prev) => (prev === 'monthly' ? 'yearly' : 'monthly'))
+                }
+                sx={{ m: 0 }}
+              />
+            </div>
+
+            <span
+              className={`font-bold text-lg cursor-pointer transition-colors ${
+                billingInterval === 'monthly' ? 'text-gray-800' : 'text-gray-400'
+              }`}
+              onClick={() => setBillingInterval('monthly')}
+              style={{ userSelect: 'none' }}
+            >
+              Monthly
+            </span>
+          </div>
+        </div>
+
+        {/* Single Pricing Card */}
+        <div className="max-w-md mx-auto mb-16 mt-6">
+          <div className="bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-200">
+            <div className="p-8">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    {selectedPlan.name}
+                  </h3>
+                  <p className="text-gray-600 mt-1">{selectedPlan.description}</p>
                 </div>
-                <div
-                  className="flex items-center gap-2 cursor-pointer"
-                  onClick={() => setPlan(plans[1]!)}
-                >
-                  <input
-                    type="radio"
-                    name="pricing"
-                    className="radio"
-                    checked={plan.price === 99}
-                    readOnly
-                  />
-                  <span>Pay yearly (60% OFF 💰)</span>
-                </div>
+                {selectedPlan.highlight && (
+                  <span className="bg-rose-100 text-rose-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                    Popular
+                  </span>
+                )}
               </div>
 
-              {/* Price display */}
-              <div className="flex gap-2">
-                <p className="text-5xl tracking-tight font-extrabold">
-                  ${plan.price}
-                </p>
-                <div className="flex flex-col justify-end mb-[4px]">
-                  <p className="text-sm tracking-wide text-base-content/80 uppercase font-semibold">
-                    {plan.duration}
-                  </p>
-                </div>
+              <div className="mb-6 flex items-baseline">
+                <span className="text-5xl font-bold text-gray-900">
+                  ${selectedPlan.price}
+                </span>
+                <span className="text-xl text-gray-500 ml-2 font-medium">
+                  {selectedPlan.duration}
+                </span>
               </div>
 
-              {/* Feature list */}
-              <ul className="space-y-2.5 leading-relaxed text-base flex-1">
-                {[
-                  { name: 'NextJS boilerplate' },
-                  { name: 'Supabase Auth' },
-                  { name: 'Database integration' },
-                  { name: 'Emails & Notifications' },
-                  { name: '1 year of updates' },
-                  { name: '24/7 support' },
-                ].map((feature, i) => (
-                  <li key={i} className="flex items-center gap-2">
+              <ul className="space-y-4">
+                {selectedPlan.features.map((feature, index) => (
+                  <li key={index} className="flex items-start">
                     <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
+                      className="h-5 w-5 flex-shrink-0 text-green-500 mt-0.5"
                       fill="currentColor"
-                      className="w-[18px] h-[18px] opacity-80 shrink-0"
+                      viewBox="0 0 20 20"
                     >
                       <path
                         fillRule="evenodd"
-                        d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span>{feature.name}</span>
+                    <span className="ml-3 text-gray-600">{feature}</span>
                   </li>
                 ))}
               </ul>
 
-              {/* Subscribe Button */}
-              <div className="space-y-2">
+              <div className="mt-8">
                 <a
-                  className="btn btn-primary btn-block"
+                  href={`${selectedPlan.link}?prefilled_email=${user?.email || ''}`}
+                  className="w-full flex items-center justify-center px-6 py-3 rounded-lg text-base font-medium text-white bg-rose-500 hover:bg-rose-600 transition-all duration-200"
                   target="_blank"
                   rel="noopener noreferrer"
-                  href={`${plan.link}?prefilled_email=${user?.email || ''}`}
                 >
-                  Subscribe
+                  Get Started →
                 </a>
                 {!user && (
-                  <p className="text-center text-sm text-base-content/70">
-                    Please <strong>sign in</strong> to continue
+                  <p className="text-center text-sm text-gray-500 mt-2">
+                    Please <span className="font-semibold">sign in</span> to continue
                   </p>
                 )}
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Branding at bottom-right */}
-      <section className="fixed right-8 bottom-8">
-        <a
-          href="https://shipfa.st?ref=stripe_pricing_video"
-          className="bg-white font-medium inline-block text-sm border border-base-content/20 hover:border-base-content/40 hover:text-base-content/90 hover:scale-105 duration-200 cursor-pointer rounded text-base-content/80 px-2 py-1"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <div className="flex gap-1 items-center">
-            <span>Built with</span>
-            <span className="font-bold text-base-content flex gap-0.5 items-center tracking-tight">
-              {/* <Image
-                src={logo}
-                alt="ShipFast logo"
-                priority
-                className="w-5 h-5"
-                width={20}
-                height={20}
-              /> */}
-              ShipFast
-            </span>
+        {/* Trust badge */}
+        <div className="flex justify-center mt-8">
+          <div className="flex items-center">
+            <svg
+              className="h-5 w-5 text-green-500"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span className="ml-2 text-sm text-gray-600">Secure checkout</span>
           </div>
-        </a>
-      </section>
+        </div>
+      </div>
     </section>
   );
 };
