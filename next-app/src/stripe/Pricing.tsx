@@ -244,4 +244,13 @@ const Pricing: React.FC = () => {
   );
 };
 
+// Utility function to handle checkout that can be used in other components
+export const handleCheckout = (planType: 'monthly' | 'yearly', userEmail?: string) => {
+  const selectedPlan = planType === 'monthly' ? plans[0] : plans[1];
+  if (!selectedPlan) return;
+  
+  const checkoutUrl = `${selectedPlan.link}?prefilled_email=${userEmail || ''}`;
+  window.open(checkoutUrl, '_blank');
+};
+
 export default Pricing;

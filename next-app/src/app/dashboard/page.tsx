@@ -14,7 +14,7 @@ import {
 } from '@/utils/db';
 import { generateWeddingPlan } from '@/utils/ai/ai';
 import NavBar from './navBar'; // import your existing NavBar
-import { plans } from '@/stripe/Pricing';
+import { plans, handleCheckout } from '@/stripe/Pricing';
 
 // Subscription Button Component
 function SubscriptionButton({ user }: { user: any }) {
@@ -71,27 +71,39 @@ function SubscriptionButton({ user }: { user: any }) {
           className="w-72 bg-white rounded-lg shadow-xl z-50 overflow-hidden border border-gray-200"
           style={getDropdownPosition()}
         >
-          <div className="p-4 border-b border-gray-100">
-            <h4 className="font-semibold text-gray-800">Choose a Plan</h4>
+          <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-rose-50 to-purple-50">
+            <h4 className="font-semibold text-gray-800">Choose Your Subscription</h4>
+            <p className="text-xs text-gray-600 mt-1">Select a plan to unlock premium features</p>
           </div>
           <div className="p-4 space-y-3">
-            {plans.map((plan, index) => (
-              <a
-                key={index}
-                href={`${plan.link}?prefilled_email=${user?.email || ''}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block p-3 hover:bg-gray-50 rounded-lg transition-colors"
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-medium text-gray-800">{plan.name}</p>
-                    <p className="text-sm text-gray-500">${plan.price}{plan.duration}</p>
-                  </div>
-                  <span className="text-rose-500 text-sm font-medium">Select →</span>
+            {/* Monthly Plan */}
+            <button
+              onClick={() => handleCheckout('monthly', user?.email)}
+              className="block w-full text-left p-3 hover:bg-gray-50 rounded-lg transition-colors"
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="font-medium text-gray-800">Essential</p>
+                  <p className="text-sm text-gray-500">$19/month</p>
                 </div>
-              </a>
-            ))}
+                <span className="text-rose-500 text-sm font-medium">Select →</span>
+              </div>
+            </button>
+            
+            {/* Yearly Plan */}
+            <button
+              onClick={() => handleCheckout('yearly', user?.email)}
+              className="block w-full text-left p-3 hover:bg-gray-50 rounded-lg transition-colors border-l-2 border-rose-500"
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="font-medium text-gray-800">Premium</p>
+                  <p className="text-sm text-gray-500">$99/year</p>
+                  <p className="text-xs text-rose-500 mt-1">Best Value</p>
+                </div>
+                <span className="text-rose-500 text-sm font-medium">Select →</span>
+              </div>
+            </button>
           </div>
         </div>,
         portalContainer
