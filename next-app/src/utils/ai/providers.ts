@@ -1,3 +1,4 @@
+// /utils/ai/providers.ts
 import { createOpenAI, type OpenAIProviderSettings } from '@ai-sdk/openai';
 import { getEncoding } from 'js-tiktoken';
 
@@ -13,11 +14,10 @@ const openai = createOpenAI({
   baseURL: process.env.OPENAI_ENDPOINT || 'https://api.openai.com/v1',
 } as CustomOpenAIProviderSettings);
 
-// Replace the default model with 'gpt-4o-mini' instead of 'o3-mini'
 const customModel = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
 // Models
-export const gpt4oModel = openai('gpt-4o-mini', { /* no reasoning or structured props */
+export const gpt4oModel = openai('gpt-4o-mini', {
   structuredOutputs: true,
 });
 
@@ -39,7 +39,7 @@ export function trimPrompt(
   }
 
   const overflowTokens = length - contextSize;
-  // on average it's 3 characters per token, so multiply by 3 to get a rough estimate of the number of characters
+  // on average it's 3 characters per token, so multiply by 3
   const chunkSize = prompt.length - overflowTokens * 3;
   if (chunkSize < MinChunkSize) {
     return prompt.slice(0, MinChunkSize);
@@ -51,12 +51,10 @@ export function trimPrompt(
   });
   const trimmedPrompt = splitter.splitText(prompt)[0] ?? '';
 
-  // last catch, there's a chance that the trimmed prompt is the same length
-  // as the original prompt, so do a hard cut if it doesn't reduce
+  // last catch
   if (trimmedPrompt.length === prompt.length) {
     return trimPrompt(prompt.slice(0, chunkSize), contextSize);
   }
 
-  // recursively trim until the prompt is within the context size
   return trimPrompt(trimmedPrompt, contextSize);
 }

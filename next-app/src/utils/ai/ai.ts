@@ -1,4 +1,4 @@
-// ai.ts
+// /utils/ai/ai.ts
 import type { WeddingPlan, PlanFormData } from '@/types/plan';
 
 export async function generateWeddingPlan(

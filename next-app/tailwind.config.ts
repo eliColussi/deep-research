@@ -1,18 +1,19 @@
-import type { Config } from "tailwindcss";
-
-export default {
+/** @type {import('tailwindcss').Config} */
+module.exports = {
   content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    './app/**/*.{js,ts,jsx,tsx}',    // For App Router
+    './pages/**/*.{js,ts,jsx,tsx}',  // For Pages Router
+    './components/**/*.{js,ts,jsx,tsx}',
+    './src/**/*.{js,ts,jsx,tsx}',    // If you have a src folder
   ],
   theme: {
-    extend: {
-      colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
-      },
-    },
+    extend: {},
   },
-  plugins: [],
-} satisfies Config;
+  plugins: [
+    require('daisyui'), // DaisyUI plugin
+  ],
+  daisyui: {
+    // optional: pick or customize themes
+    // themes: ["light", "dark"], 
+  },
+};

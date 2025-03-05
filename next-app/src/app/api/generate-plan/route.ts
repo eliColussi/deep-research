@@ -34,7 +34,6 @@ export async function POST(req: NextRequest) {
     const prompt = buildWeddingPrompt(body);
 
     // 3) Control how many queries we run (breadth) & recursion depth
-    //    Adjust to your usage & rate-limit constraints
     const breadth = 2;
     const depth = 2;
 
@@ -43,7 +42,6 @@ export async function POST(req: NextRequest) {
       query: prompt,
       breadth,
       depth,
-      // Optionally define onProgress if you want logs
     });
 
     // 5) Produce a final “report” from the agent
@@ -59,10 +57,13 @@ export async function POST(req: NextRequest) {
       learnings,
       visitedUrls,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error generating plan:', err);
-    return new NextResponse(err.message || 'Failed to generate wedding plan', {
-      status: 500,
-    });
+    // Safely handle unknown error
+    let message = 'Failed to generate wedding plan';
+    if (err instanceof Error) {
+      message = err.message;
+    }
+    return new NextResponse(message, { status: 500 });
   }
 }
