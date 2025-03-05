@@ -204,20 +204,16 @@ const Pricing: React.FC = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Get Started →
+                  Start Planning →
                 </a>
-                {!user && (
-                  <p className="text-center text-sm text-gray-500 mt-2">
-                    Please <span className="font-semibold">sign in</span> to continue
-                  </p>
-                )}
+                
               </div>
             </div>
           </div>
         </div>
 
         {/* Trust badge */}
-        <div className="flex justify-center mt-8">
+        <div className="flex justify-center mt-6 mb-8">
           <div className="flex items-center">
             <svg
               className="h-5 w-5 text-green-500"
