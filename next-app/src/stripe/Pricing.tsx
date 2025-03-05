@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useUser } from '@supabase/auth-helpers-react';
 import { Switch, styled } from '@mui/material';
+import Link from 'next/link';
 
 // Custom styled Material UI Switch to match the design exactly as in the image
 const MaterialUISwitch = styled(Switch)(({ theme }) => ({
@@ -64,8 +65,8 @@ export const plans: Plan[] = [
     ],
     link:
       process.env.NODE_ENV === 'development'
-        ? 'https://example-dev-monthly-link.com'
-        : 'https://example-prod-monthly-link.com',
+        ? 'https://buy.stripe.com/test_8wM03y6H31IL6qIfZ1'
+        : 'https://buy.stripe.com/test_8wM03y6H31IL6qIfZ1',
     priceId: 'dev_monthly_price_id',
   },
   {
@@ -83,8 +84,8 @@ export const plans: Plan[] = [
     ],
     link:
       process.env.NODE_ENV === 'development'
-        ? 'https://example-dev-yearly-link.com'
-        : 'https://example-prod-yearly-link.com',
+        ? 'https://buy.stripe.com/test_5kAeYs9Tf7354iAdQU'
+        : 'https://buy.stripe.com/test_5kAeYs9Tf7354iAdQU',
     priceId: 'dev_yearly_price_id',
     highlight: true,
   },
@@ -198,14 +199,23 @@ const Pricing: React.FC = () => {
               </ul>
 
               <div className="mt-8">
-                <a
-                  href={`${selectedPlan.link}?prefilled_email=${user?.email || ''}`}
-                  className="w-full flex items-center justify-center px-6 py-3 rounded-lg text-base font-medium text-white bg-rose-500 hover:bg-rose-600 transition-all duration-200"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Start Planning →
-                </a>
+                {user ? (
+                  <a
+                    href={`${selectedPlan.link}?prefilled_email=${user?.email || ''}`}
+                    className="w-full flex items-center justify-center px-6 py-3 rounded-lg text-base font-medium text-white bg-rose-500 hover:bg-rose-600 transition-all duration-200"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Start Planning →
+                  </a>
+                ) : (
+                  <Link
+                    href="/signup"
+                    className="w-full flex items-center justify-center px-6 py-3 rounded-lg text-base font-medium text-white bg-rose-500 hover:bg-rose-600 transition-all duration-200"
+                  >
+                    Create Account →
+                  </Link>
+                )}
                 
               </div>
             </div>

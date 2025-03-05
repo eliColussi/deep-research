@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '@/app/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import type { WeddingPlan, PlanFormData } from '@/types/plan';
@@ -13,6 +14,91 @@ import {
 } from '@/utils/db';
 import { generateWeddingPlan } from '@/utils/ai/ai';
 import NavBar from './navBar'; // import your existing NavBar
+import { plans } from '@/stripe/Pricing';
+
+// Subscription Button Component
+function SubscriptionButton({ user }: { user: any }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
+  
+  // Set up portal container on mount
+  useEffect(() => {
+    setPortalContainer(document.body);
+  }, []);
+  
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
+  // Calculate dropdown position based on button position
+  const getDropdownPosition = (): React.CSSProperties => {
+    if (!buttonRef.current) return {};
+    
+    const rect = buttonRef.current.getBoundingClientRect();
+    return {
+      position: 'fixed' as const,
+      top: `${rect.bottom + window.scrollY + 10}px`,
+      right: `${window.innerWidth - rect.right}px`,
+    };
+  };
+  
+  return (
+    <div className="relative">
+      <button
+        ref={buttonRef}
+        onClick={() => setIsOpen(!isOpen)}
+        className="px-5 py-2.5 bg-gradient-to-r from-rose-500 to-rose-600 text-white rounded-lg hover:from-rose-600 hover:to-rose-700 transition-all duration-200 font-medium text-sm flex items-center gap-2 shadow-md"
+      >
+        Subscribe to Plan
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      
+      {isOpen && portalContainer && createPortal(
+        <div 
+          className="w-72 bg-white rounded-lg shadow-xl z-50 overflow-hidden border border-gray-200"
+          style={getDropdownPosition()}
+        >
+          <div className="p-4 border-b border-gray-100">
+            <h4 className="font-semibold text-gray-800">Choose a Plan</h4>
+          </div>
+          <div className="p-4 space-y-3">
+            {plans.map((plan, index) => (
+              <a
+                key={index}
+                href={`${plan.link}?prefilled_email=${user?.email || ''}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block p-3 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-medium text-gray-800">{plan.name}</p>
+                    <p className="text-sm text-gray-500">${plan.price}{plan.duration}</p>
+                  </div>
+                  <span className="text-rose-500 text-sm font-medium">Select →</span>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>,
+        portalContainer
+      )}
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
@@ -153,6 +239,21 @@ export default function DashboardPage() {
 
       {/* NavBar */}
       <NavBar />
+      
+      {/* Subscription Banner */}
+      <div className="max-w-4xl mx-auto px-6 py-4">
+        <div className="bg-gradient-to-r from-rose-50 to-purple-50 rounded-xl p-4 shadow-sm border border-rose-100 flex items-center justify-between relative overflow-hidden">
+          {/* Decorative elements */}
+          <div className="absolute -left-4 -top-4 w-16 h-16 bg-rose-200 rounded-full opacity-20"></div>
+          <div className="absolute right-20 bottom-0 w-24 h-24 bg-purple-200 rounded-full opacity-20"></div>
+          
+          <div className="relative">
+            <h3 className="text-lg font-semibold text-gray-800">Upgrade Your Wedding Planning Experience</h3>
+            <p className="text-sm text-gray-600">Get access to premium features and unlimited revisions</p>
+          </div>
+          <SubscriptionButton user={user} />
+        </div>
+      </div>
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
