@@ -6,7 +6,7 @@ import { Switch, styled } from '@mui/material';
 import Link from 'next/link';
 
 // Custom styled Material UI Switch to match the design exactly as in the image
-const MaterialUISwitch = styled(Switch)(({ theme }) => ({
+export const MaterialUISwitch = styled(Switch)(({ theme }) => ({
   width: 60,
   height: 30,
   padding: 0,
