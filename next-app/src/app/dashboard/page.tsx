@@ -141,6 +141,10 @@ export default function DashboardPage() {
   const [paymentConfirmed, setPaymentConfirmed] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [researchProgress, setResearchProgress] = useState<{
+    stage: string;
+    percent: number;
+  }>({ stage: '', percent: 0 });
 
   // For any default wizard data you want to prefill
   const [formData, setFormData] = useState<PlanFormData>({
@@ -233,14 +237,45 @@ export default function DashboardPage() {
     setError(null);
 
     try {
-      // Generate AI wedding plan
+      console.log('Starting AI wedding plan generation with deep research...');
+      
+      // Save form data for potential future use
+      setFormData(wizardData);
+      
+      // Update research progress
+      setResearchProgress({ stage: 'Initializing research...', percent: 10 });
+      
+      // Set up progress tracking with timeouts to simulate progress
+      const progressStages = [
+        { stage: 'Gathering information...', percent: 25 },
+        { stage: 'Analyzing wedding venues...', percent: 40 },
+        { stage: 'Researching vendors...', percent: 55 },
+        { stage: 'Finding best deals...', percent: 70 },
+        { stage: 'Compiling recommendations...', percent: 85 },
+        { stage: 'Finalizing your plan...', percent: 95 }
+      ];
+      
+      // Simulate progress updates
+      progressStages.forEach((stage, index) => {
+        setTimeout(() => {
+          setResearchProgress(stage);
+        }, (index + 1) * 3000); // Update every 3 seconds
+      });
+      
+      // Generate AI wedding plan with deep research
       const newPlan = await generateWeddingPlan(wizardData);
+      console.log('Wedding plan generated successfully:', newPlan);
+      
+      // Complete the progress
+      setResearchProgress({ stage: 'Plan completed!', percent: 100 });
 
-      // Save or update
+      // Save or update the plan in the database
       if (plan) {
+        console.log('Updating existing wedding plan...');
         const updated = await updateWeddingPlan(user.id, newPlan, wizardData);
         if (!updated) throw new Error('Failed to update wedding plan');
       } else {
+        console.log('Saving new wedding plan...');
         const saved = await saveWeddingPlan(user.id, newPlan, wizardData);
         if (!saved) throw new Error('Failed to save wedding plan');
       }
@@ -249,11 +284,33 @@ export default function DashboardPage() {
       const updatedProfile = await updateUserPlanCount(user.id);
       setPlan(newPlan);
       setRevisionsLeft(updatedProfile.revisions_remaining);
+      console.log('Wedding plan process completed successfully');
     } catch (err: any) {
       console.error('Error generating plan:', err);
-      setError(err.message || 'An error occurred while generating your plan');
+      
+      // More detailed error handling
+      let errorMessage = 'An error occurred while generating your plan';
+      
+      if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      // Check for specific error types
+      if (err.message?.includes('SERPER_API_KEY')) {
+        errorMessage = 'Search API configuration error. Please contact support.';
+      } else if (err.message?.includes('Timeout')) {
+        errorMessage = 'The research process timed out. Please try again with a more specific request.';
+      } else if (err.message?.includes('rate limit')) {
+        errorMessage = 'We\'ve reached our API rate limit. Please try again in a few minutes.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
+      // Reset progress state after a delay to ensure smooth transition
+      setTimeout(() => {
+        setResearchProgress({ stage: '', percent: 0 });
+      }, 500);
     }
   }
 
@@ -344,8 +401,47 @@ export default function DashboardPage() {
           {/* If user has no plan, show wizard; else show plan */}
           <div className="bg-white rounded-2xl shadow-sm border border-pink-100 p-8">
             {!plan ? (
-              // Multi-step wizard
-              <PlanWizard />
+              isLoading ? (
+                // Research progress indicator
+                <div className="flex flex-col items-center justify-center py-10 space-y-6">
+                  <div className="w-full max-w-md bg-white rounded-lg shadow-sm border border-pink-100 p-6">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                      {researchProgress.stage || 'Researching your perfect wedding...'}  
+                    </h3>
+                    
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                      <div 
+                        className="bg-gradient-to-r from-pink-400 to-purple-500 h-2.5 rounded-full transition-all duration-500 ease-in-out" 
+                        style={{ width: `${researchProgress.percent}%` }}
+                      ></div>
+                    </div>
+                    
+                    <p className="text-sm text-gray-600 mb-6">
+                      Our AI is searching for venues, vendors, and ideas tailored to your preferences.
+                      This may take a few minutes as we gather detailed information.
+                    </p>
+                    
+                    <div className="flex items-center justify-center">
+                      <div className="animate-pulse flex space-x-4 items-center">
+                        <div className="h-3 w-3 bg-pink-400 rounded-full"></div>
+                        <div className="h-3 w-3 bg-pink-500 rounded-full"></div>
+                        <div className="h-3 w-3 bg-pink-600 rounded-full"></div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-sm text-gray-500 italic">
+                    We're using real-time data to create the most up-to-date plan for you.
+                  </div>
+                </div>
+              ) : (
+                // Multi-step wizard with proper props
+                <PlanWizard 
+                  onSubmit={handleWizardFinalSubmit}
+                  initialData={formData}
+                  isLoading={isLoading}
+                />
+              )
             ) : (
               // Show existing plan
               <div className="space-y-6">
@@ -353,18 +449,68 @@ export default function DashboardPage() {
                   <h2 className="text-2xl font-semibold text-gray-900">
                     Your Wedding Plan
                   </h2>
+                  
+                  {/* Display only the relevant plan sections in a more organized way */}
                   <div className="grid gap-6 sm:grid-cols-2">
-                    {Object.entries(plan).map(([key, value]) => (
-                      <div
-                        key={key}
-                        className="bg-pink-50/50 rounded-lg p-4"
-                      >
-                        <h3 className="text-lg font-medium text-gray-900 capitalize mb-2">
-                          {key}
-                        </h3>
-                        <p className="text-gray-600">{value}</p>
+                    {/* Venue Section */}
+                    <div className="bg-pink-50/50 rounded-lg p-4 col-span-2">
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        Venue Recommendations
+                      </h3>
+                      <div className="text-gray-600 whitespace-pre-line">
+                        {typeof plan.venue === 'string' ? plan.venue : 'Venue information not available'}
                       </div>
-                    ))}
+                    </div>
+                    
+                    {/* Budget Section */}
+                    <div className="bg-purple-50/50 rounded-lg p-4">
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        Budget Breakdown
+                      </h3>
+                      <div className="text-gray-600 whitespace-pre-line">
+                        {typeof plan.budget === 'string' ? plan.budget : 'Budget information not available'}
+                      </div>
+                    </div>
+                    
+                    {/* Timeline Section */}
+                    <div className="bg-purple-50/50 rounded-lg p-4">
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        Timeline
+                      </h3>
+                      <div className="text-gray-600 whitespace-pre-line">
+                        {typeof plan.timeline === 'string' ? plan.timeline : 'Timeline information not available'}
+                      </div>
+                    </div>
+                    
+                    {/* Vendors Section */}
+                    <div className="bg-pink-50/50 rounded-lg p-4 col-span-2">
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        Recommended Vendors
+                      </h3>
+                      <div className="text-gray-600 whitespace-pre-line">
+                        {typeof plan.vendors === 'string' ? plan.vendors : 'Vendor information not available'}
+                      </div>
+                    </div>
+                    
+                    {/* Decor Section */}
+                    <div className="bg-pink-50/50 rounded-lg p-4">
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        Decor & Theme
+                      </h3>
+                      <div className="text-gray-600 whitespace-pre-line">
+                        {typeof plan.decor === 'string' ? plan.decor : 'Decor information not available'}
+                      </div>
+                    </div>
+                    
+                    {/* Recommendations Section */}
+                    <div className="bg-pink-50/50 rounded-lg p-4">
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        Additional Recommendations
+                      </h3>
+                      <div className="text-gray-600 whitespace-pre-line">
+                        {typeof plan.recommendations === 'string' ? plan.recommendations : 'No additional recommendations'}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 {revisionsLeft > 0 && (

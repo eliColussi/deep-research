@@ -36,20 +36,30 @@ const steps = [
   'Review & Submit',
 ];
 
-export default function MultiStepWeddingForm() {
+interface MultiStepWeddingFormProps {
+  onSubmit: (formData: PlanFormData) => Promise<void>;
+  initialData?: Partial<PlanFormData>;
+  isLoading?: boolean;
+}
+
+export default function MultiStepWeddingForm({
+  onSubmit,
+  initialData = {},
+  isLoading = false,
+}: MultiStepWeddingFormProps) {
   // 1. State for the current step (0-based)
   const [currentStep, setCurrentStep] = useState(0);
 
-  // 2. State for form data
+  // 2. State for form data with initialData merged
   const [formData, setFormData] = useState<PlanFormData>({
-    budget: '',
-    guestCount: 0,
-    location: '',
-    dateRange: '',
-    season: '',
-    weddingStyle: '',
-    colorPalette: '',
-    preferences: '',
+    budget: initialData.budget || '',
+    guestCount: initialData.guestCount || 0,
+    location: initialData.location || '',
+    dateRange: initialData.dateRange || '',
+    season: initialData.season || '',
+    weddingStyle: initialData.weddingStyle || '',
+    colorPalette: initialData.colorPalette || '',
+    preferences: initialData.preferences || '',
   });
 
   // 3. Move to next step
@@ -64,8 +74,8 @@ export default function MultiStepWeddingForm() {
   // 4. Final submission
   async function handleFinalSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // Replace with your actual submission logic, e.g. generateWeddingPlan(formData)
-    alert('Submitted form: ' + JSON.stringify(formData, null, 2));
+    // Call the parent component's onSubmit function with the form data
+    await onSubmit(formData);
   }
 
   // 5. Helper to render each step’s content
@@ -146,9 +156,42 @@ export default function MultiStepWeddingForm() {
               type="submit"
               variant="contained"
               color="secondary"
-              sx={{ ml: 'auto' }}
+              sx={{ 
+                ml: 'auto',
+                position: 'relative',
+                minWidth: '180px'
+              }}
+              disabled={isLoading}
             >
-              Submit
+              {isLoading ? (
+                <>
+                  <Box 
+                    component="span" 
+                    sx={{ 
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 1
+                    }}
+                  >
+                    <Box 
+                      component="span" 
+                      sx={{ 
+                        width: '16px',
+                        height: '16px',
+                        border: '2px solid rgba(255,255,255,0.3)',
+                        borderRadius: '50%',
+                        borderTopColor: 'white',
+                        animation: 'spin 1s linear infinite',
+                        '@keyframes spin': {
+                          '0%': { transform: 'rotate(0deg)' },
+                          '100%': { transform: 'rotate(360deg)' }
+                        }
+                      }}
+                    />
+                    Researching...
+                  </Box>
+                </>
+              ) : 'Submit Plan'}
             </Button>
           )}
         </Box>
