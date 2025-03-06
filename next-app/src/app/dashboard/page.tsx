@@ -21,9 +21,11 @@ import PlanWizard from './PlanWizard'; // <-- Your multi-step wizard
 function SideNav({
   user,
   paymentConfirmed,
+  onSignOut,
 }: {
   user: any;
   paymentConfirmed: boolean;
+  onSignOut: () => void;
 }) {
   return (
     <aside
@@ -101,20 +103,33 @@ function SideNav({
         </div>
       </div>
 
-      {/* Bottom Section: user info */}
-      <div className="flex items-center gap-3 mt-8">
-        {/* Example avatar (replace with real user image if you have it) */}
-        <img
-          src="/avatar-placeholder.png"
-          alt="User Avatar"
-          className="w-10 h-10 rounded-full object-cover ring-2 ring-purple-300"
-        />
-        <div className="leading-tight">
-          <div className="text-sm font-semibold text-gray-800">
-            {user?.user_metadata?.name || 'User'}
-          </div>
-          <div className="text-xs text-gray-500">
-            {user?.email || 'hello@example.com'}
+      {/* Sign Out Button */}
+      <div className="mt-auto">
+        <button
+          onClick={onSignOut}
+          className="w-full py-2 px-4 mb-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-colors duration-200"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          Sign Out
+        </button>
+        
+        {/* Bottom Section: user info */}
+        <div className="flex items-center gap-3">
+          {/* Example avatar (replace with real user image if you have it) */}
+          <img
+            src="/avatar-placeholder.png"
+            alt="User Avatar"
+            className="w-10 h-10 rounded-full object-cover ring-2 ring-purple-300"
+          />
+          <div className="leading-tight">
+            <div className="text-sm font-semibold text-gray-800">
+              {user?.user_metadata?.name || 'User'}
+            </div>
+            <div className="text-xs text-gray-500">
+              {user?.email || 'hello@example.com'}
+            </div>
           </div>
         </div>
       </div>
@@ -252,19 +267,24 @@ export default function DashboardPage() {
   return (
     <>
       {/* Fixed side nav */}
-      <SideNav user={user} paymentConfirmed={paymentConfirmed} />
+      <SideNav 
+        user={user} 
+        paymentConfirmed={paymentConfirmed} 
+        onSignOut={() => {
+          // Sign out the user
+          supabase.auth.signOut().then(() => {
+            // Redirect to home page after sign out
+            router.push('/');
+          });
+        }} 
+      />
 
       {/* Main content area, margin-left to accommodate side nav */}
       <div className="ml-64 min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
-        {/* Minimal Header: remove brand label, keep sign out */}
+        {/* Minimal Header without sign out button */}
         <header className="border-b border-pink-100 bg-white/50 backdrop-blur-sm">
           <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-end">
-            <button
-              onClick={() => supabase.auth.signOut()}
-              className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              Sign Out
-            </button>
+            {/* Header content if needed */}
           </div>
         </header>
 
