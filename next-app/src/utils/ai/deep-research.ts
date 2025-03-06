@@ -203,8 +203,8 @@ async function processSerpResult({
   }
 
   // Log the first content to debug - we know contents.length > 0 at this point
-  console.log('First content sample:', contents[0].substring(0, 200) + '...');
-
+  console.log('First content sample:', contents[0]!.substring(0, 200) + '...');
+  
   const res = await generateObject({
     model: gpt4oModel,
     system: systemPrompt(),
