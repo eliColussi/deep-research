@@ -269,16 +269,10 @@ export default function DashboardPage() {
       // Complete the progress
       setResearchProgress({ stage: 'Plan completed!', percent: 100 });
 
-      // Save or update the plan in the database
-      if (plan) {
-        console.log('Updating existing wedding plan...');
-        const updated = await updateWeddingPlan(user.id, newPlan, wizardData);
-        if (!updated) throw new Error('Failed to update wedding plan');
-      } else {
-        console.log('Saving new wedding plan...');
-        const saved = await saveWeddingPlan(user.id, newPlan, wizardData);
-        if (!saved) throw new Error('Failed to save wedding plan');
-      }
+      // Save the plan in the database (saveWeddingPlan now handles both insert and update)
+      console.log('Saving wedding plan...');
+      const saved = await saveWeddingPlan(user.id, newPlan, wizardData);
+      if (!saved) throw new Error('Failed to save wedding plan');
 
       // Decrement revision count
       const updatedProfile = await updateUserPlanCount(user.id);

@@ -112,19 +112,20 @@ export async function updateUserPlanCount(userId: string) {
   return data;
 }
 
-// Insert a new wedding plan
+// Insert or update a wedding plan
 export async function saveWeddingPlan(
   userId: string,
   plan: WeddingPlan,
   preferences: PlanFormData
 ) {
+  // Use upsert instead of insert to handle cases where the user already has a plan
   const { data, error } = await supabase
     .from('wedding_plans')
-    .insert({
+    .upsert({
       user_id: userId,
       current_plan: plan,
       initial_preferences: preferences,
-    })
+    }, { onConflict: 'user_id' }) // Specify the column that has the unique constraint
     .select()
     .single();
 
