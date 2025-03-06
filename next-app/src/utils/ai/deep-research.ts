@@ -37,6 +37,13 @@ interface SerperSearchResponse {
   data: {
     markdown: string;
     url: string;
+    title?: string;
+    link?: string;
+    position?: number;
+    rating?: string;
+    reviews?: string;
+    phoneNumber?: string;
+    address?: string;
   }[];
 }
 
@@ -131,8 +138,55 @@ ${item.phoneNumber ? `Phone: ${item.phoneNumber}` : ''}
 ${item.address ? `Address: ${item.address}` : ''}
 `,
       url: item.link,
+      title: item.title,
+      link: item.link,
+      position: item.position,
+      rating: item.rating,
+      reviews: item.reviews,
+      phoneNumber: item.phoneNumber,
+      address: item.address,
     })),
   };
+}
+
+/**
+ * Extract key preferences from the user's prompt to help with targeted searches
+ */
+function extractPreferencesFromPrompt(prompt: string): Record<string, string> {
+  // Simple regex-based extraction of common wedding planning preferences
+  const preferences: Record<string, string> = {};
+  
+  // Extract location
+  const locationMatch = prompt.match(/\b(?:in|at)\s+([A-Za-z\s,]+)(?:\.|,|\s|$)/i);
+  if (locationMatch && locationMatch[1]) {
+    preferences.location = locationMatch[1].trim();
+  }
+  
+  // Extract guest count
+  const guestMatch = prompt.match(/\b(\d+)\s+guests\b/i);
+  if (guestMatch && guestMatch[1]) {
+    preferences.guestCount = guestMatch[1];
+  }
+  
+  // Extract budget
+  const budgetMatch = prompt.match(/\$([\d,]+)\s*-?\s*\$?([\d,]+)?/i);
+  if (budgetMatch) {
+    preferences.budget = budgetMatch[0];
+  }
+  
+  // Extract season/date
+  const seasonMatch = prompt.match(/\b(spring|summer|fall|autumn|winter|january|february|march|april|may|june|july|august|september|october|november|december)\b/i);
+  if (seasonMatch) {
+    preferences.season = seasonMatch[0];
+  }
+  
+  // Extract theme/style
+  const themeMatch = prompt.match(/\b(rustic|elegant|modern|traditional|beach|garden|luxury|minimalist|bohemian|vintage)\b/i);
+  if (themeMatch) {
+    preferences.theme = themeMatch[0];
+  }
+  
+  return preferences;
 }
 
 /**
@@ -140,23 +194,44 @@ ${item.address ? `Address: ${item.address}` : ''}
  */
 async function generateSerpQueries({
   query,
-  numQueries = 2,
+  numQueries = 3, // Increased default from 2 to 3 for more comprehensive research
   learnings,
 }: {
   query: string;
   numQueries?: number;
   learnings?: string[];
 }) {
+  // Extract key preferences for more targeted queries
+  const preferences = extractPreferencesFromPrompt(query);
+  console.log('Extracted preferences for queries:', preferences);
+  
+  // Create a location-specific variable for better targeting
+  const location = preferences.location || 'Greece';
+  
   const res = await generateObject({
     model: gpt4oModel,
     system: systemPrompt(),
     prompt: trimPrompt(`
-We have the user's wedding plan prompt:
-<mainPrompt>${query}</mainPrompt>
+Generate ${numQueries} HIGHLY SPECIFIC search queries to find CONCRETE wedding planning information for ${location}.
 
-Generate up to ${numQueries} SERP queries focusing on phone numbers, user reviews, star ratings, advanced details. 
-If prior learnings exist, incorporate them:
-${(learnings || []).join('\n')}
+Each query should target EXACT details like:
+- Specific venue names with phone numbers and ratings
+- Exact vendor contact information and pricing
+- Specific wedding package details with prices
+- Real reviews with star ratings
+
+DO NOT generate generic queries like "best wedding venues in Greece" or "wedding catering options".
+Instead, create queries like:
+- "Santorini Gem wedding venue Greece phone number reviews capacity pricing"
+- "Mykonos wedding photographers portfolio prices packages contact information"
+- "Athens wedding catering companies Mediterranean menu cost per person reviews"
+
+User's wedding preferences:
+<preferences>${query}</preferences>
+
+${(learnings || []).length > 0 ? `Based on what we've already learned:\n${(learnings || []).join('\n')}` : ''}
+
+For each query, also provide a clear research goal explaining what SPECIFIC information we're trying to find.
 `),
     schema: z.object({
       queries: z.array(
@@ -177,8 +252,8 @@ ${(learnings || []).join('\n')}
 async function processSerpResult({
   query,
   result,
-  numLearnings = 3,
-  numFollowUpQuestions = 2,
+  numLearnings = 5, // Increased from 3 to 5 for more comprehensive information
+  numFollowUpQuestions = 3, // Increased from 2 to 3 for more detailed follow-up
 }: {
   query: string;
   result: SerperSearchResponse;
@@ -196,8 +271,9 @@ async function processSerpResult({
     return {
       learnings: [`No specific information found for "${query}". Consider trying a different search term.`],
       followUpQuestions: [
-        `What are the most popular wedding venues in Greece?`,
-        `What is the average cost of a wedding in Greece?`
+        `What are the most popular wedding venues in Greece with contact information?`,
+        `What is the average cost breakdown for a wedding in Greece with specific vendor pricing?`,
+        `What are the highest-rated wedding photographers in Greece with portfolio links?`
       ]
     };
   }
@@ -205,24 +281,52 @@ async function processSerpResult({
   // Log the first content to debug - we know contents.length > 0 at this point
   console.log('First content sample:', contents[0]!.substring(0, 200) + '...');
   
+  // Extract search result metadata for better context
+  const resultMetadata = result.data.map(item => ({
+    title: item.title || 'No Title',
+    link: item.link || 'No Link',
+    position: item.position,
+    rating: item.rating,
+    reviews: item.reviews,
+    phoneNumber: item.phoneNumber,
+    address: item.address
+  }));
+  
+  console.log('Search result metadata:', JSON.stringify(resultMetadata, null, 2));
+  
   const res = await generateObject({
     model: gpt4oModel,
     system: systemPrompt(),
     prompt: trimPrompt(`
-You are extracting specific, detailed wedding information from search results.
+You are extracting HIGHLY SPECIFIC, DETAILED wedding information from search results.
 
-Given these search results for "${query}", extract EXACTLY ${numLearnings} specific learnings.
-Focus on extracting concrete details like:
-- Exact phone numbers
-- Specific star ratings (e.g., "4.8/5 stars based on 120 reviews")
-- Direct quotes from user reviews
-- Pricing information with exact numbers
-- Venue capacity details
-- Vendor contact information
+Given these search results for "${query}", extract EXACTLY ${numLearnings} SPECIFIC learnings.
+Each learning MUST include CONCRETE DETAILS like:
 
-Do NOT make up information. If you can't find enough specific details, say "Limited information available".
+1. EXACT business names with their EXACT contact information:
+   - Full business name (e.g., "Santorini Gem Wedding Venue")
+   - Complete phone numbers with country code (e.g., "+30 22860 34333")
+   - Website URLs (e.g., "www.santorini-gem.com")
+   - Email addresses (e.g., "info@santorini-gem.com")
 
-Also generate ${numFollowUpQuestions} follow-up questions that would help gather more specific details:
+2. PRECISE ratings and reviews:
+   - Exact star ratings with decimal points (e.g., "4.8/5 stars")
+   - Number of reviews (e.g., "based on 127 reviews")
+   - Direct quotes from actual reviews (e.g., "Amazing venue with breathtaking views" - Maria S.)
+
+3. SPECIFIC pricing information:
+   - Exact package prices (e.g., "€5,000 for basic wedding package")
+   - Price ranges with specifics (e.g., "€8,000-€12,000 for 100 guests including catering")
+   - Cost breakdowns (e.g., "€120 per person for premium menu options")
+
+4. DETAILED venue/vendor information:
+   - Exact capacity numbers (e.g., "accommodates 50-180 guests")
+   - Specific features (e.g., "infinity pool overlooking caldera")
+   - Available services (e.g., "in-house catering with Mediterranean menu options")
+
+DO NOT make up information or use generic descriptions. If specific details aren't available, clearly state "Specific [detail type] not available" rather than providing vague information.
+
+Also generate ${numFollowUpQuestions} highly specific follow-up questions that would help gather more detailed information:
 
 <search_results>
 ${contents.map(c => `<result>\n${c}\n</result>`).join('\n')}
@@ -322,38 +426,7 @@ ${learningsString}
   return finalReport;
 }
 
-// Helper function to extract key preferences from the prompt
-function extractPreferencesFromPrompt(prompt: string): Record<string, string> {
-  const preferences: Record<string, string> = {};
-  
-  // Extract budget
-  const budgetMatch = prompt.match(/budget[:\s]*(\$?[\d,]+\s*-\s*\$?[\d,]+|\$?[\d,]+)/i);
-  if (budgetMatch && budgetMatch[1]) {
-    preferences.budget = budgetMatch[1];
-  }
-  
-  // Extract guest count
-  const guestMatch = prompt.match(/guest[s\s]*count[:\s]*(\d+)/i) || 
-                    prompt.match(/guests[:\s]*(\d+)/i);
-  if (guestMatch && guestMatch[1]) {
-    preferences.guestCount = guestMatch[1];
-  }
-  
-  // Extract location
-  const locationMatch = prompt.match(/location[:\s]*([^\n,\.]+)/i);
-  if (locationMatch && locationMatch[1]) {
-    preferences.location = locationMatch[1].trim();
-  }
-  
-  // Extract style/theme
-  const styleMatch = prompt.match(/style[:\s]*([^\n,\.]+)/i) || 
-                   prompt.match(/theme[:\s]*([^\n,\.]+)/i);
-  if (styleMatch && styleMatch[1]) {
-    preferences.style = styleMatch[1].trim();
-  }
-  
-  return preferences;
-}
+// This function has been removed as it was a duplicate of the one defined earlier
 
 /**
  * Step D: Orchestrate
