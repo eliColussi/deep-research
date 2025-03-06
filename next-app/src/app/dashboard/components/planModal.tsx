@@ -4,8 +4,8 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useUser } from '@supabase/auth-helpers-react';
-import { MaterialUISwitch, plans } from '@/stripe/Pricing'; 
 import Link from 'next/link';
+import { MaterialUISwitch, plans, handleCheckout } from '@/stripe/Pricing';
 
 /**
  * PlanModal Props
@@ -15,12 +15,16 @@ import Link from 'next/link';
 interface PlanModalProps {
   isOpen: boolean;
   onClose: () => void;
+  user?: any; // Add user prop
 }
 
-export default function PlanModal({ isOpen, onClose }: PlanModalProps) {
+export default function PlanModal({ isOpen, onClose, user: propUser }: PlanModalProps) {
   // For toggling monthly/yearly
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>('monthly');
-  const user = useUser();
+  const authUser = useUser();
+  
+  // Use the user prop if provided, otherwise fall back to the user from useUser()
+  const user = propUser || authUser;
 
   // Default fallback plan in case plans array is empty or undefined
   const fallbackPlan = {
@@ -153,23 +157,39 @@ export default function PlanModal({ isOpen, onClose }: PlanModalProps) {
             </ul>
 
             <div className="mt-6">
-              {user ? (
-                <a
-                  href={`${plan.link}?prefilled_email=${user?.email || ''}`}
-                  className="w-full flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium text-white bg-rose-500 hover:bg-rose-600 transition-all duration-200"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Upgrade Now →
-                </a>
-              ) : (
-                <Link
-                  href="/signup"
-                  className="w-full flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium text-white bg-rose-500 hover:bg-rose-600 transition-all duration-200"
-                >
-                  Create Account →
-                </Link>
-              )}
+              <button
+                onClick={() => {
+                  // Use handleCheckout to open the correct Stripe link, with user email
+                  const planType = billingInterval; // 'monthly' or 'yearly'
+                  
+                  // Log user object to debug
+                  console.log('User object:', user);
+                  
+                  // Get email directly from user object - handle different user object structures
+                  let userEmail = '';
+                  
+                  if (user) {
+                    // Try to get email from different possible locations in the user object
+                    if (user.email) {
+                      userEmail = user.email;
+                    } else if (user.user_metadata && user.user_metadata.email) {
+                      userEmail = user.user_metadata.email;
+                    } else if (typeof user === 'string') {
+                      // If user is just an email string
+                      userEmail = user;
+                    }
+                  }
+                  
+                  console.log('User email for checkout:', userEmail);
+                  
+                  // Pass the email to handleCheckout
+                  handleCheckout(planType, userEmail);
+                  onClose(); // Close the modal
+                }}
+                className="w-full flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium text-white bg-rose-500 hover:bg-rose-600 transition-all duration-200"
+              >
+                Continue
+              </button>
             </div>
           </div>
         </div>

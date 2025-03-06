@@ -245,11 +245,37 @@ const Pricing: React.FC = () => {
 };
 
 // Utility function to handle checkout that can be used in other components
-export const handleCheckout = (planType: 'monthly' | 'yearly', userEmail?: string) => {
+export const handleCheckout = (planType: 'monthly' | 'yearly', userEmail?: any) => {
   const selectedPlan = planType === 'monthly' ? plans[0] : plans[1];
   if (!selectedPlan) return;
   
-  const checkoutUrl = `${selectedPlan.link}?prefilled_email=${userEmail || ''}`;
+  // Handle different types of userEmail parameter
+  let emailStr = '';
+  
+  if (userEmail) {
+    // If userEmail is an object with an email property
+    if (typeof userEmail === 'object' && userEmail.email) {
+      emailStr = userEmail.email;
+    }
+    // If userEmail is an object with user_metadata.email
+    else if (typeof userEmail === 'object' && userEmail.user_metadata && userEmail.user_metadata.email) {
+      emailStr = userEmail.user_metadata.email;
+    }
+    // If userEmail is already a string
+    else if (typeof userEmail === 'string') {
+      emailStr = userEmail;
+    }
+  }
+  
+  // Make sure the email is properly encoded for the URL
+  const encodedEmail = emailStr ? encodeURIComponent(emailStr) : '';
+  
+  // Use client_reference_id parameter for Stripe to track the customer
+  const checkoutUrl = `${selectedPlan.link}?prefilled_email=${encodedEmail}&client_reference_id=${encodedEmail}`;
+  console.log('Opening checkout URL with email:', emailStr);
+  console.log('Full checkout URL:', checkoutUrl);
+  
+  // Open the URL in a new tab
   window.open(checkoutUrl, '_blank');
 };
 

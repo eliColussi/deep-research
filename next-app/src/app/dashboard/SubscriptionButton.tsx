@@ -22,6 +22,7 @@ export default function SubscriptionButton({ user }: { user: any }) {
       <PlanModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        user={user}
       />
     </>
   );
