@@ -118,11 +118,7 @@ function SideNav({
         {/* Bottom Section: user info */}
         <div className="flex items-center gap-3">
           {/* Example avatar (replace with real user image if you have it) */}
-          <img
-            src="/avatar-placeholder.png"
-            alt="User Avatar"
-            className="w-10 h-10 rounded-full object-cover ring-2 ring-purple-300"
-          />
+          
           <div className="leading-tight">
             <div className="text-sm font-semibold text-gray-800">
               {user?.user_metadata?.name || 'User'}
