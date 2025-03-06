@@ -104,9 +104,32 @@ async function serperSearch(
   const data = await response.json();
 
   // 4) Transform the data into { data: { markdown, url }[] }
+  // Log the raw response to debug
+  console.log('Serper API raw response:', JSON.stringify(data, null, 2).substring(0, 500) + '...');
+  
+  // Extract organic results
+  const organicResults = data.organicResults || [];
+  console.log(`Found ${organicResults.length} organic results`);
+  
+  if (organicResults.length === 0) {
+    console.warn('No organic results found in Serper response');
+  }
+  
+  // Create more detailed markdown from each result
   return {
-    data: (data.organicResults || []).map((item: any) => ({
-      markdown: `${item.title}\n\n${item.snippet || ''}`,
+    data: organicResults.map((item: any) => ({
+      markdown: `# ${item.title || 'No Title'}
+
+URL: ${item.link || 'No Link'}
+
+${item.snippet || 'No Snippet'}
+
+${item.position ? `Position: ${item.position}` : ''}
+${item.rating ? `Rating: ${item.rating}` : ''}
+${item.reviews ? `Reviews: ${item.reviews}` : ''}
+${item.phoneNumber ? `Phone: ${item.phoneNumber}` : ''}
+${item.address ? `Address: ${item.address}` : ''}
+`,
       url: item.link,
     })),
   };
@@ -166,26 +189,65 @@ async function processSerpResult({
     .map(c => trimPrompt(c, 25_000));
 
   log(`Ran ${query}, found ${contents.length} contents`);
+  
+  // If no contents were found, create a default learning to avoid empty results
+  if (contents.length === 0) {
+    console.warn('No contents found for query:', query);
+    return {
+      learnings: [`No specific information found for "${query}". Consider trying a different search term.`],
+      followUpQuestions: [
+        `What are the most popular wedding venues in Greece?`,
+        `What is the average cost of a wedding in Greece?`
+      ]
+    };
+  }
+
+  // Log the first content to debug
+  if (contents.length > 0) {
+    console.log('First content sample:', contents[0].substring(0, 200) + '...');
+  } else {
+    console.log('No content found to sample');
+  }
 
   const res = await generateObject({
     model: gpt4oModel,
     system: systemPrompt(),
     prompt: trimPrompt(`
-Given these SERP contents for <${query}>, 
-extract up to ${numLearnings} new learnings focusing on phone numbers, star ratings, user reviews, advanced wedding insights, 
-and up to ${numFollowUpQuestions} follow-up questions:
+You are extracting specific, detailed wedding information from search results.
 
-<contents>
-${contents.map(c => `<content>\n${c}\n</content>`).join('\n')}
-</contents>
+Given these search results for "${query}", extract EXACTLY ${numLearnings} specific learnings.
+Focus on extracting concrete details like:
+- Exact phone numbers
+- Specific star ratings (e.g., "4.8/5 stars based on 120 reviews")
+- Direct quotes from user reviews
+- Pricing information with exact numbers
+- Venue capacity details
+- Vendor contact information
+
+Do NOT make up information. If you can't find enough specific details, say "Limited information available".
+
+Also generate ${numFollowUpQuestions} follow-up questions that would help gather more specific details:
+
+<search_results>
+${contents.map(c => `<result>\n${c}\n</result>`).join('\n')}
+</search_results>
 `),
     schema: z.object({
       learnings: z.array(z.string()),
       followUpQuestions: z.array(z.string()),
     }),
   });
-  log(`Created ${res.object.learnings.length} learnings`, res.object.learnings);
-  return res.object;
+  
+  // Ensure we always have at least one learning
+  const learnings = res.object.learnings.length > 0 
+    ? res.object.learnings 
+    : [`Limited specific information found for "${query}". Will try different search terms.`];
+    
+  log(`Created ${learnings.length} learnings`, learnings);
+  return {
+    learnings,
+    followUpQuestions: res.object.followUpQuestions
+  };
 }
 
 /**
@@ -200,33 +262,101 @@ export async function writeFinalReport({
   learnings: string[];
   visitedUrls: string[];
 }) {
+  console.log(`Writing final report with ${learnings.length} learnings and ${visitedUrls.length} sources`);
+  
+  // Log a sample of learnings for debugging
+  if (learnings.length > 0) {
+    console.log('Sample learnings for final report:', learnings.slice(0, 3));
+  }
+  
   const learningsString = trimPrompt(
     learnings.map(ln => `<learning>\n${ln}\n</learning>`).join('\n'),
     150_000
   );
 
+  // Parse the prompt to extract key preferences
+  const preferences = extractPreferencesFromPrompt(prompt);
+  console.log('Extracted preferences:', preferences);
+
   const res = await generateObject({
     model: gpt4oModel,
     system: systemPrompt(),
     prompt: trimPrompt(`
-We have the user's prompt plus these combined learnings. 
-Write a final wedding plan with phone numbers, user reviews, star ratings, hidden gems, advanced deals, etc.:
+You are creating a DETAILED and STRUCTURED wedding plan based on the user's preferences and our research findings.
 
-<prompt>${prompt}</prompt>
+User preferences:
+${prompt}
 
-<allLearnings>
+Based on these preferences and our research findings below, create a comprehensive wedding plan with the following sections:
+
+1. Venue Recommendations (with phone numbers, ratings, and reviews)
+2. Budget Breakdown (detailed cost estimates)
+3. Timeline (schedule for the wedding day)
+4. Recommended Vendors (with contact info and ratings)
+5. Decor & Theme (specific ideas matching their style)
+6. Additional Recommendations (any other helpful suggestions)
+
+For each section, include SPECIFIC details like:
+- Exact venue names with phone numbers
+- Specific vendor recommendations with contact information
+- Actual price ranges from real venues/vendors
+- Direct quotes from reviews when available
+- Star ratings when available
+
+Make this plan EXTREMELY PRACTICAL and ACTIONABLE. Include ALL relevant contact information, prices, and specific details.
+
+<research_findings>
 ${learningsString}
-</allLearnings>
+</research_findings>
 `),
     schema: z.object({
       reportMarkdown: z.string(),
     }),
   });
 
+  // Add sources at the end
   const urlsSection = `\n\n## Sources\n\n${visitedUrls
+    .filter(url => url && url.trim().length > 0)
     .map(url => `- ${url}`)
     .join('\n')}`;
-  return res.object.reportMarkdown + urlsSection;
+    
+  const finalReport = res.object.reportMarkdown + urlsSection;
+  console.log('Final report generated successfully');
+  
+  return finalReport;
+}
+
+// Helper function to extract key preferences from the prompt
+function extractPreferencesFromPrompt(prompt: string): Record<string, string> {
+  const preferences: Record<string, string> = {};
+  
+  // Extract budget
+  const budgetMatch = prompt.match(/budget[:\s]*(\$?[\d,]+\s*-\s*\$?[\d,]+|\$?[\d,]+)/i);
+  if (budgetMatch && budgetMatch[1]) {
+    preferences.budget = budgetMatch[1];
+  }
+  
+  // Extract guest count
+  const guestMatch = prompt.match(/guest[s\s]*count[:\s]*(\d+)/i) || 
+                    prompt.match(/guests[:\s]*(\d+)/i);
+  if (guestMatch && guestMatch[1]) {
+    preferences.guestCount = guestMatch[1];
+  }
+  
+  // Extract location
+  const locationMatch = prompt.match(/location[:\s]*([^\n,\.]+)/i);
+  if (locationMatch && locationMatch[1]) {
+    preferences.location = locationMatch[1].trim();
+  }
+  
+  // Extract style/theme
+  const styleMatch = prompt.match(/style[:\s]*([^\n,\.]+)/i) || 
+                   prompt.match(/theme[:\s]*([^\n,\.]+)/i);
+  if (styleMatch && styleMatch[1]) {
+    preferences.style = styleMatch[1].trim();
+  }
+  
+  return preferences;
 }
 
 /**
@@ -247,6 +377,8 @@ export async function deepResearch({
   visitedUrls?: string[];
   onProgress?: (progress: ResearchProgress) => void;
 }): Promise<ResearchResult> {
+  console.log('Starting deep research with:', { query, breadth, depth, existingLearnings: learnings.length });
+  
   const progress: ResearchProgress = {
     currentDepth: depth,
     totalDepth: depth,
@@ -262,12 +394,24 @@ export async function deepResearch({
     onProgress?.(progress);
   };
 
-  // Step 1: Generate queries
-  const serpQueries = await generateSerpQueries({
+  // Step 1: Generate queries - ensure we get at least one query
+  let serpQueries = await generateSerpQueries({
     query,
     learnings,
     numQueries: breadth,
   });
+  
+  // If no queries were generated, create a default one
+  if (serpQueries.length === 0) {
+    console.warn('No queries generated, using default query');
+    serpQueries = [{
+      query: `wedding venues in Greece oceanfront reviews`,
+      researchGoal: 'Find top-rated wedding venues in Greece with ocean views'
+    }];
+  }
+  
+  console.log('Generated queries:', serpQueries);
+  
   reportProgress({
     totalQueries: serpQueries.length,
     currentQuery: serpQueries[0]?.query,
@@ -278,30 +422,45 @@ export async function deepResearch({
 
   // Step 3: Process each query in parallel (with concurrency=1)
   const results = await Promise.all(
-    serpQueries.map(serpQuery =>
+    serpQueries.map((serpQuery, index) =>
       limit(async () => {
         try {
+          console.log(`Processing query ${index + 1}/${serpQueries.length}: ${serpQuery.query}`);
+          reportProgress({
+            currentQuery: serpQuery.query,
+          });
+          
           // For each query, call Serper for real-time data
           const result = await serperSearch(serpQuery.query, {
             gl: 'us',
             hl: 'en',
             autocorrect: true,
             time_range: 'm', // e.g. 'd', 'w', 'm', 'y'
-            num: 5,
+            num: 10, // Increase number of results
           });
 
           const newUrls = compact(result.data.map(item => item.url));
-          const newBreadth = Math.ceil(breadth / 2);
+          console.log(`Found ${newUrls.length} URLs for query: ${serpQuery.query}`);
+          
+          const newBreadth = Math.max(1, Math.ceil(breadth / 2));
           const newDepth = depth - 1;
 
-          const newLearnings = await processSerpResult({
+          // Process search results to extract learnings
+          const newLearningsResult = await processSerpResult({
             query: serpQuery.query,
             result,
+            numLearnings: 5, // Increase number of learnings
+            numFollowUpQuestions: 3, // Increase number of follow-up questions
           });
-          const allLearnings = [...learnings, ...newLearnings.learnings];
+          
+          console.log(`Extracted ${newLearningsResult.learnings.length} learnings for query: ${serpQuery.query}`);
+          console.log('Sample learnings:', newLearningsResult.learnings.slice(0, 2));
+          
+          const allLearnings = [...learnings, ...newLearningsResult.learnings];
           const allUrls = [...visitedUrls, ...newUrls];
 
-          if (newDepth > 0) {
+          // Only go deeper if we have meaningful results and depth remaining
+          if (newDepth > 0 && newLearningsResult.learnings.length > 0) {
             log(
               `Researching deeper => breadth: ${newBreadth}, depth: ${newDepth}`
             );
@@ -315,7 +474,7 @@ export async function deepResearch({
             const nextQuery = `
 Previous research goal: ${serpQuery.researchGoal}
 Follow-up directions:
-${newLearnings.followUpQuestions.map(q => `- ${q}`).join('\n')}
+${newLearningsResult.followUpQuestions.map(q => `- ${q}`).join('\n')}
 `.trim();
 
             return deepResearch({
@@ -327,7 +486,7 @@ ${newLearnings.followUpQuestions.map(q => `- ${q}`).join('\n')}
               onProgress,
             });
           } else {
-            // Depth exhausted
+            // Depth exhausted or no meaningful results
             reportProgress({
               currentDepth: 0,
               completedQueries: progress.completedQueries + 1,
@@ -343,16 +502,29 @@ ${newLearnings.followUpQuestions.map(q => `- ${q}`).join('\n')}
             log(`Timeout error running query: ${serpQuery.query}`, err);
           } else {
             log(`Error running query: ${serpQuery.query}`, err);
+            console.error('Error details:', err);
           }
-          return { learnings: [], visitedUrls: [] };
+          // Return existing learnings instead of empty array to preserve progress
+          return { learnings, visitedUrls };
         }
       })
     )
   );
 
   // Combine all results
+  const combinedLearnings = [...new Set(results.flatMap(r => r.learnings))];
+  const combinedUrls = [...new Set(results.flatMap(r => r.visitedUrls))];
+  
+  console.log(`Deep research complete. Found ${combinedLearnings.length} learnings and ${combinedUrls.length} sources`);
+  
+  // If we have no learnings after all that, add a default learning
+  if (combinedLearnings.length === 0) {
+    console.warn('No learnings found after deep research, adding default learning');
+    combinedLearnings.push('Limited specific information found. Consider refining your search criteria or exploring more general wedding planning resources for Greece.');
+  }
+  
   return {
-    learnings: [...new Set(results.flatMap(r => r.learnings))],
-    visitedUrls: [...new Set(results.flatMap(r => r.visitedUrls))],
+    learnings: combinedLearnings,
+    visitedUrls: combinedUrls,
   };
 }
