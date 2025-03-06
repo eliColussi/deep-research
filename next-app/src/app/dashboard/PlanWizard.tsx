@@ -1,9 +1,23 @@
 'use client';
 
 import React, { useState } from 'react';
+import {
+  Box,
+  Button,
+  Stepper,
+  Step,
+  StepLabel,
+  Typography,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Paper,
+} from '@mui/material';
 
 // Types for your plan data
-interface PlanFormData {
+export interface PlanFormData {
   budget: string;
   guestCount: number;
   location: string;
@@ -13,6 +27,14 @@ interface PlanFormData {
   colorPalette: string;
   preferences: string;
 }
+
+const steps = [
+  'Budget & Guests',
+  'Location & Dates',
+  'Theme & Style',
+  'Preferences',
+  'Review & Submit',
+];
 
 export default function MultiStepWeddingForm() {
   // 1. State for the current step (0-based)
@@ -30,132 +52,108 @@ export default function MultiStepWeddingForm() {
     preferences: '',
   });
 
-  // 3. Steps array for easy iteration
-  const steps = [
-    'Budget & Guests',
-    'Location & Dates',
-    'Theme & Style',
-    'Preferences',
-    'Review & Submit',
-  ];
-
-  // 4. Helper to move to next step
+  // 3. Move to next step
   function nextStep() {
     setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
   }
-  // Helper to move to previous step
+  // Move to previous step
   function prevStep() {
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   }
 
-  // 5. Final submission
+  // 4. Final submission
   async function handleFinalSubmit(e: React.FormEvent) {
     e.preventDefault();
-
-    // You can integrate your existing wedding plan logic here:
-    // e.g., generateWeddingPlan(formData)
-    // or handleSubmit to your backend
-
+    // Replace with your actual submission logic, e.g. generateWeddingPlan(formData)
     alert('Submitted form: ' + JSON.stringify(formData, null, 2));
   }
 
-  // 6. Render each step
+  // 5. Helper to render each step’s content
+  function renderStepContent(stepIndex: number) {
+    switch (stepIndex) {
+      case 0:
+        return (
+          <StepBudgetGuests formData={formData} setFormData={setFormData} />
+        );
+      case 1:
+        return (
+          <StepLocationDates formData={formData} setFormData={setFormData} />
+        );
+      case 2:
+        return (
+          <StepThemeStyle formData={formData} setFormData={setFormData} />
+        );
+      case 3:
+        return (
+          <StepPreferences formData={formData} setFormData={setFormData} />
+        );
+      case 4:
+        return <StepReview formData={formData} />;
+      default:
+        return <div>Unknown Step</div>;
+    }
+  }
+
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4">
-      {/* Progress Indicator */}
-      <div className="flex items-center justify-between mb-8">
-        {steps.map((label, index) => {
-          const active = index <= currentStep;
-          return (
-            <div key={label} className="flex items-center">
-              <div
-                className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium mr-2 ${
-                  active
-                    ? 'bg-pink-500 text-white'
-                    : 'bg-gray-200 text-gray-500'
-                }`}
-              >
-                {index + 1}
-              </div>
-              <span
-                className={`text-sm font-semibold mr-4 ${
-                  active ? 'text-gray-900' : 'text-gray-400'
-                }`}
-              >
-                {label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+    <Box maxWidth="600px" mx="auto" py={4} px={2}>
+      {/* MUI Stepper for progress indicator */}
+      <Stepper activeStep={currentStep} alternativeLabel sx={{ mb: 4 }}>
+        {steps.map((label) => (
+          <Step key={label}>
+            <StepLabel>{label}</StepLabel>
+          </Step>
+        ))}
+      </Stepper>
 
-      <form
-        onSubmit={currentStep === steps.length - 1 ? handleFinalSubmit : (e) => e.preventDefault()}
-        className="space-y-6 bg-white p-6 rounded-lg shadow"
+      {/* The main form container */}
+      <Paper
+        component="form"
+        onSubmit={
+          currentStep === steps.length - 1
+            ? handleFinalSubmit
+            : (e) => e.preventDefault()
+        }
+        elevation={3}
+        sx={{ p: 3, borderRadius: 2 }}
       >
-        {currentStep === 0 && (
-          <StepBudgetGuests
-            formData={formData}
-            setFormData={setFormData}
-          />
-        )}
-
-        {currentStep === 1 && (
-          <StepLocationDates
-            formData={formData}
-            setFormData={setFormData}
-          />
-        )}
-
-        {currentStep === 2 && (
-          <StepThemeStyle
-            formData={formData}
-            setFormData={setFormData}
-          />
-        )}
-
-        {currentStep === 3 && (
-          <StepPreferences
-            formData={formData}
-            setFormData={setFormData}
-          />
-        )}
-
-        {currentStep === 4 && (
-          <StepReview formData={formData} />
-        )}
+        {/* Step-specific content */}
+        {renderStepContent(currentStep)}
 
         {/* Navigation Buttons */}
-        <div className="flex items-center justify-between mt-4">
+        <Box display="flex" justifyContent="space-between" mt={4}>
           {currentStep > 0 && (
-            <button
-              type="button"
+            <Button
+              variant="outlined"
+              color="inherit"
               onClick={prevStep}
-              className="px-5 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition"
+              sx={{ mr: 'auto' }}
             >
               Previous
-            </button>
+            </Button>
           )}
           {currentStep < steps.length - 1 && (
-            <button
-              type="button"
+            <Button
+              variant="contained"
+              color="primary"
               onClick={nextStep}
-              className="ml-auto px-5 py-2 bg-pink-500 text-white rounded hover:bg-pink-600 transition"
+              sx={{ ml: 'auto' }}
             >
               Next
-            </button>
+            </Button>
           )}
           {currentStep === steps.length - 1 && (
-            <button
+            <Button
               type="submit"
-              className="ml-auto px-5 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition"
+              variant="contained"
+              color="secondary"
+              sx={{ ml: 'auto' }}
             >
               Submit
-            </button>
+            </Button>
           )}
-        </div>
-      </form>
-    </div>
+        </Box>
+      </Paper>
+    </Box>
   );
 }
 
@@ -168,44 +166,40 @@ function StepBudgetGuests({
   setFormData: React.Dispatch<React.SetStateAction<PlanFormData>>;
 }) {
   return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Budget Range
-        </label>
-        <select
-          className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
+    <Box display="flex" flexDirection="column" gap={2}>
+      <FormControl fullWidth>
+        <InputLabel id="budget-label">Budget Range</InputLabel>
+        <Select
+          labelId="budget-label"
+          label="Budget Range"
           value={formData.budget}
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, budget: e.target.value }))
           }
         >
-          <option value="">Select budget</option>
-          <option value="10-20k">💰 $10,000 - $20,000</option>
-          <option value="20-30k">💰 $20,000 - $30,000</option>
-          <option value="30-50k">💰 $30,000 - $50,000</option>
-          <option value="50k+">💰 $50,000+</option>
-        </select>
-      </div>
+          <MenuItem value="">Select budget</MenuItem>
+          <MenuItem value="10-20k">$10,000 - $20,000</MenuItem>
+          <MenuItem value="20-30k">$20,000 - $30,000</MenuItem>
+          <MenuItem value="30-50k">$30,000 - $50,000</MenuItem>
+          <MenuItem value="50k+">$50,000+</MenuItem>
+        </Select>
+      </FormControl>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Guest Count
-        </label>
-        <input
-          type="number"
-          className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
-          value={formData.guestCount}
-          onChange={(e) =>
-            setFormData((prev) => ({
-              ...prev,
-              guestCount: parseInt(e.target.value, 10),
-            }))
-          }
-          placeholder="E.g. 100"
-        />
-      </div>
-    </div>
+      <TextField
+        fullWidth
+        type="number"
+        label="Guest Count"
+        variant="outlined"
+        value={formData.guestCount}
+        onChange={(e) =>
+          setFormData((prev) => ({
+            ...prev,
+            guestCount: parseInt(e.target.value, 10),
+          }))
+        }
+        placeholder="E.g. 100"
+      />
+    </Box>
   );
 }
 
@@ -218,37 +212,29 @@ function StepLocationDates({
   setFormData: React.Dispatch<React.SetStateAction<PlanFormData>>;
 }) {
   return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Location
-        </label>
-        <input
-          type="text"
-          className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
-          value={formData.location}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, location: e.target.value }))
-          }
-          placeholder="City, State or Country"
-        />
-      </div>
+    <Box display="flex" flexDirection="column" gap={2}>
+      <TextField
+        fullWidth
+        label="Location"
+        variant="outlined"
+        value={formData.location}
+        onChange={(e) =>
+          setFormData((prev) => ({ ...prev, location: e.target.value }))
+        }
+        placeholder="City, State or Country"
+      />
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Date Range
-        </label>
-        <input
-          type="text"
-          className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
-          value={formData.dateRange}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, dateRange: e.target.value }))
-          }
-          placeholder="e.g. June 2025 or a specific date"
-        />
-      </div>
-    </div>
+      <TextField
+        fullWidth
+        label="Date Range"
+        variant="outlined"
+        value={formData.dateRange}
+        onChange={(e) =>
+          setFormData((prev) => ({ ...prev, dateRange: e.target.value }))
+        }
+        placeholder="e.g. June 2025 or a specific date"
+      />
+    </Box>
   );
 }
 
@@ -261,45 +247,43 @@ function StepThemeStyle({
   setFormData: React.Dispatch<React.SetStateAction<PlanFormData>>;
 }) {
   return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Preferred Season
-        </label>
-        <select
-          className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
+    <Box display="flex" flexDirection="column" gap={2}>
+      <FormControl fullWidth>
+        <InputLabel id="season-label">Preferred Season</InputLabel>
+        <Select
+          labelId="season-label"
+          label="Preferred Season"
           value={formData.season}
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, season: e.target.value }))
           }
         >
-          <option value="">Select season</option>
-          <option value="spring">🌸 Spring</option>
-          <option value="summer">🌞 Summer</option>
-          <option value="fall">🍂 Fall</option>
-          <option value="winter">❄️ Winter</option>
-        </select>
-      </div>
+          <MenuItem value="">Select season</MenuItem>
+          <MenuItem value="spring">Spring</MenuItem>
+          <MenuItem value="summer">Summer</MenuItem>
+          <MenuItem value="fall">Fall</MenuItem>
+          <MenuItem value="winter">Winter</MenuItem>
+        </Select>
+      </FormControl>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Wedding Style
-        </label>
-        <select
-          className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
+      <FormControl fullWidth>
+        <InputLabel id="style-label">Wedding Style</InputLabel>
+        <Select
+          labelId="style-label"
+          label="Wedding Style"
           value={formData.weddingStyle}
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, weddingStyle: e.target.value }))
           }
         >
-          <option value="">Select style</option>
-          <option value="classic">✨ Classic</option>
-          <option value="boho">🌿 Boho</option>
-          <option value="modern">💎 Modern</option>
-          <option value="rustic">🏵 Rustic</option>
-        </select>
-      </div>
-    </div>
+          <MenuItem value="">Select style</MenuItem>
+          <MenuItem value="classic">Classic</MenuItem>
+          <MenuItem value="boho">Boho</MenuItem>
+          <MenuItem value="modern">Modern</MenuItem>
+          <MenuItem value="rustic">Rustic</MenuItem>
+        </Select>
+      </FormControl>
+    </Box>
   );
 }
 
@@ -312,78 +296,77 @@ function StepPreferences({
   setFormData: React.Dispatch<React.SetStateAction<PlanFormData>>;
 }) {
   return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Color Palette
-        </label>
-        <select
-          className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
+    <Box display="flex" flexDirection="column" gap={2}>
+      <FormControl fullWidth>
+        <InputLabel id="palette-label">Color Palette</InputLabel>
+        <Select
+          labelId="palette-label"
+          label="Color Palette"
           value={formData.colorPalette}
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, colorPalette: e.target.value }))
           }
         >
-          <option value="">Select palette</option>
-          <option value="pastel">🌈 Pastel</option>
-          <option value="vibrant">🌟 Vibrant</option>
-          <option value="neutral">🤍 Neutral</option>
-          <option value="dark">🌑 Dark</option>
-        </select>
-      </div>
+          <MenuItem value="">Select palette</MenuItem>
+          <MenuItem value="pastel">Pastel</MenuItem>
+          <MenuItem value="vibrant">Vibrant</MenuItem>
+          <MenuItem value="neutral">Neutral</MenuItem>
+          <MenuItem value="dark">Dark</MenuItem>
+        </Select>
+      </FormControl>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Additional Preferences
-        </label>
-        <textarea
-          className="w-full rounded-lg border-gray-200 focus:border-pink-500 focus:ring-pink-500"
-          rows={4}
-          value={formData.preferences}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, preferences: e.target.value }))
-          }
-          placeholder="Tell us about your dream wedding..."
-        />
-      </div>
-    </div>
+      <TextField
+        fullWidth
+        label="Additional Preferences"
+        variant="outlined"
+        multiline
+        rows={4}
+        value={formData.preferences}
+        onChange={(e) =>
+          setFormData((prev) => ({ ...prev, preferences: e.target.value }))
+        }
+        placeholder="Tell us about your dream wedding..."
+      />
+    </Box>
   );
 }
 
 // -------------- Step 5: Review & Submit --------------
 function StepReview({ formData }: { formData: PlanFormData }) {
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-gray-700 mb-2">Review Your Details</h2>
-      <div className="text-sm space-y-2">
-        <p>
-          <span className="font-medium">Budget:</span> {formData.budget}
-        </p>
-        <p>
-          <span className="font-medium">Guest Count:</span> {formData.guestCount}
-        </p>
-        <p>
-          <span className="font-medium">Location:</span> {formData.location}
-        </p>
-        <p>
-          <span className="font-medium">Date Range:</span> {formData.dateRange}
-        </p>
-        <p>
-          <span className="font-medium">Preferred Season:</span> {formData.season}
-        </p>
-        <p>
-          <span className="font-medium">Wedding Style:</span> {formData.weddingStyle}
-        </p>
-        <p>
-          <span className="font-medium">Color Palette:</span> {formData.colorPalette}
-        </p>
-        <p>
-          <span className="font-medium">Additional Preferences:</span> {formData.preferences}
-        </p>
-      </div>
-      <p className="text-gray-500 text-sm mt-4">
+    <Box display="flex" flexDirection="column" gap={2}>
+      <Typography variant="h6" gutterBottom>
+        Review Your Details
+      </Typography>
+
+      <Typography variant="body2">
+        <strong>Budget:</strong> {formData.budget}
+      </Typography>
+      <Typography variant="body2">
+        <strong>Guest Count:</strong> {formData.guestCount}
+      </Typography>
+      <Typography variant="body2">
+        <strong>Location:</strong> {formData.location}
+      </Typography>
+      <Typography variant="body2">
+        <strong>Date Range:</strong> {formData.dateRange}
+      </Typography>
+      <Typography variant="body2">
+        <strong>Preferred Season:</strong> {formData.season}
+      </Typography>
+      <Typography variant="body2">
+        <strong>Wedding Style:</strong> {formData.weddingStyle}
+      </Typography>
+      <Typography variant="body2">
+        <strong>Color Palette:</strong> {formData.colorPalette}
+      </Typography>
+      <Typography variant="body2">
+        <strong>Additional Preferences:</strong> {formData.preferences}
+      </Typography>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
         If everything looks correct, click <strong>Submit</strong> to finish!
-      </p>
-    </div>
+      </Typography>
+    </Box>
   );
 }

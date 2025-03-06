@@ -15,7 +15,7 @@ import {
 import { generateWeddingPlan } from '@/utils/ai/ai';
 
 import SubscriptionButton from './SubscriptionButton';
-import PlanWizard from './PlanWizard'; // <-- Import your multi-step wizard
+import PlanWizard from './PlanWizard'; // <-- Your multi-step wizard
 
 // ------------------ Side Navigation ------------------ //
 function SideNav({
@@ -28,20 +28,25 @@ function SideNav({
   return (
     <aside
       className="
-        w-64
+        fixed
+        top-0
+        left-0
         h-screen
-        flex flex-col
-        justify-between
+        w-64
         bg-white
         shadow-xl
         border-r border-gray-200
         p-6
+        flex
+        flex-col
+        justify-between
+        z-50
       "
     >
       <div>
-        {/* "Mahi." label */}
+        {/* Move brand to side nav (top-left) */}
         <h1 className="text-2xl font-extrabold text-gray-800 mb-8 tracking-tight">
-          Mahi.
+          Wedding Planner AI
         </h1>
 
         {/* “Add New” button */}
@@ -68,11 +73,31 @@ function SideNav({
         </button>
 
         {/* “Dashboard 12” item */}
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-4">
           <span className="text-base font-semibold text-gray-800">Dashboard</span>
           <span className="text-xs bg-red-500 text-white rounded-full px-2 py-0.5 shadow-sm">
             12
           </span>
+        </div>
+
+        {/* AI Assistant ✨ button with gradient border */}
+        <div className="bg-gradient-to-r from-pink-500 to-purple-500 p-[1px] rounded-lg">
+          <button
+            className="
+              w-full
+              rounded-md
+              bg-white
+              py-2
+              px-4
+              text-sm
+              text-gray-700
+              font-medium
+              hover:bg-gray-50
+              transition
+            "
+          >
+            AI Assistant ✨
+          </button>
         </div>
       </div>
 
@@ -86,10 +111,10 @@ function SideNav({
         />
         <div className="leading-tight">
           <div className="text-sm font-semibold text-gray-800">
-            {user?.user_metadata?.name || 'Mahi.'}
+            {user?.user_metadata?.name || 'User'}
           </div>
           <div className="text-xs text-gray-500">
-            {user?.email || 'hello@arshakir.com'}
+            {user?.email || 'hello@example.com'}
           </div>
         </div>
       </div>
@@ -106,9 +131,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const router = useRouter();
-
-  // Extended form data if we need to store defaults for the wizard
+  // For any default wizard data you want to prefill
   const [formData, setFormData] = useState<PlanFormData>({
     budget: '',
     guestCount: 0,
@@ -119,6 +142,8 @@ export default function DashboardPage() {
     weddingStyle: '',
     colorPalette: '',
   });
+
+  const router = useRouter();
 
   // ------------------ On Mount: Check User Session & Load Data ------------------ //
   useEffect(() => {
@@ -221,21 +246,19 @@ export default function DashboardPage() {
     }
   }
 
+  // If user is not loaded or is null, return nothing
   if (!user) return null;
 
   return (
-    <div className="flex min-h-screen">
-      {/* Side Navigation (left) */}
+    <>
+      {/* Fixed side nav */}
       <SideNav user={user} paymentConfirmed={paymentConfirmed} />
 
-      {/* Main Content (right) */}
-      <main className="flex-1 bg-gradient-to-br from-pink-50 to-purple-50">
-        {/* Header */}
+      {/* Main content area, margin-left to accommodate side nav */}
+      <div className="ml-64 min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
+        {/* Minimal Header: remove brand label, keep sign out */}
         <header className="border-b border-pink-100 bg-white/50 backdrop-blur-sm">
-          <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-            <h1 className="text-xl font-semibold bg-gradient-to-r from-pink-500 to-purple-500 text-transparent bg-clip-text">
-              Wedding Planner AI
-            </h1>
+          <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-end">
             <button
               onClick={() => supabase.auth.signOut()}
               className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
@@ -378,7 +401,7 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </>
   );
 }
