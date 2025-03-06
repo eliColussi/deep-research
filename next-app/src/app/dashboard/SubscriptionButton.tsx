@@ -70,7 +70,7 @@ export default function SubscriptionButton({ user }: { user: any }) {
       <button
         ref={buttonRef}
         onClick={toggleDropdown}
-        className="bg-rose-500 hover:bg-rose-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+        className="bg-rose-500 hover:bg-rose-900 text-white font-medium py-2 px-4 rounded-lg transition-colors"
       >
         Upgrade Plan
       </button>

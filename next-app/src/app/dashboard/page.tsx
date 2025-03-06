@@ -161,8 +161,8 @@ export default function DashboardPage() {
       <div className="max-w-4xl mx-auto px-6 py-4">
         <div className="bg-gradient-to-r from-rose-50 to-purple-50 rounded-xl p-4 shadow-sm border border-rose-100 flex items-center justify-between relative overflow-hidden">
           {/* Decorative elements */}
-          <div className="absolute -left-4 -top-4 w-16 h-16 bg-rose-200 rounded-full opacity-20"></div>
-          <div className="absolute right-20 bottom-0 w-24 h-24 bg-purple-200 rounded-full opacity-20"></div>
+          <div className="absolute -left-4 -top-4 w-16 h-16 bg-rose-200 rounded-full opacity-20 -z-10"></div>
+          <div className="absolute right-20 bottom-0 w-24 h-24 bg-purple-200 rounded-full opacity-20 -z-10"></div>
           
           <div className="relative">
             <h3 className="text-lg font-semibold text-gray-800">Upgrade Your Wedding Planning Experience</h3>
