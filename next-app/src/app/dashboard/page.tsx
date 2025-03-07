@@ -12,7 +12,7 @@ import {
   saveWeddingPlan,
   updateWeddingPlan,
 } from '@/utils/db';
-import { generateWeddingPlan } from '@/utils/ai/ai';
+import { generateWeddingPlan } from '@/utils/ai/perplexityClient';
 
 import SubscriptionButton from './SubscriptionButton';
 import PlanWizard from './PlanWizard'; // <-- Your multi-step wizard
@@ -262,21 +262,34 @@ export default function DashboardPage() {
         }, (index + 1) * 3000); // Update every 3 seconds
       });
       
-      // Generate AI wedding plan with deep research
-      const newPlan = await generateWeddingPlan(wizardData);
-      console.log('Wedding plan generated successfully:', newPlan);
+      // Generate AI wedding plan with Perplexity Sonar
+      const planResult = await generateWeddingPlan(wizardData);
+      console.log('Wedding plan generated successfully:', planResult);
+      
+      // Extract the plan from the result
+      const weddingPlan: WeddingPlan = {
+        id: planResult.plan.id || `plan-${Date.now()}`,
+        user_id: user.id,
+        venue: planResult.plan.venue || '',
+        decor: planResult.plan.decor || '',
+        timeline: planResult.plan.timeline || '',
+        vendors: planResult.plan.vendors || '',
+        budget: planResult.plan.budget || '',
+        recommendations: planResult.plan.recommendations || '',
+        initial_preferences: wizardData
+      };
       
       // Complete the progress
       setResearchProgress({ stage: 'Plan completed!', percent: 100 });
 
       // Save the plan in the database (saveWeddingPlan now handles both insert and update)
       console.log('Saving wedding plan...');
-      const saved = await saveWeddingPlan(user.id, newPlan, wizardData);
+      const saved = await saveWeddingPlan(user.id, weddingPlan, wizardData);
       if (!saved) throw new Error('Failed to save wedding plan');
 
       // Decrement revision count
       const updatedProfile = await updateUserPlanCount(user.id);
-      setPlan(newPlan);
+      setPlan(weddingPlan);
       setRevisionsLeft(updatedProfile.revisions_remaining);
       console.log('Wedding plan process completed successfully');
     } catch (err: any) {
