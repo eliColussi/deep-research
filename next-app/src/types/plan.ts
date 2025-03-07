@@ -8,6 +8,7 @@ export interface WeddingPlan {
   recommendations: string;
   initial_preferences?: PlanFormData;
   user_id: string;
+  markdownPlan?: string; // Full markdown plan content
 }
 
 export interface PlanFormData {

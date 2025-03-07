@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/app/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import type { WeddingPlan, PlanFormData } from '@/types/plan';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 import {
   getUserProfile,
@@ -276,7 +278,8 @@ export default function DashboardPage() {
         vendors: planResult.plan.vendors || '',
         budget: planResult.plan.budget || '',
         recommendations: planResult.plan.recommendations || '',
-        initial_preferences: wizardData
+        initial_preferences: wizardData,
+        markdownPlan: planResult.markdownPlan || ''
       };
       
       // Complete the progress
@@ -453,71 +456,73 @@ export default function DashboardPage() {
               // Show existing plan
               <div className="space-y-6">
                 <div className="prose prose-pink max-w-none">
-                  <h2 className="text-2xl font-semibold text-gray-900">
+                  <h2 className="text-2xl font-semibold text-gray-900 mb-6">
                     Your Wedding Plan
                   </h2>
                   
-                  {/* Display only the relevant plan sections in a more organized way */}
-                  <div className="grid gap-6 sm:grid-cols-2">
-                    {/* Venue Section */}
-                    <div className="bg-pink-50/50 rounded-lg p-4 col-span-2">
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        Venue Recommendations
-                      </h3>
-                      <div className="text-gray-600 whitespace-pre-line">
-                        {typeof plan.venue === 'string' ? plan.venue : 'Venue information not available'}
+                  {/* Display the entire wedding plan as formatted markdown */}
+                  <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+                    {plan.markdownPlan ? (
+                      <div className="text-gray-700 markdown-content">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-pink-700 mb-4" {...props} />,
+                            h2: ({node, ...props}) => <h2 className="text-xl font-semibold text-pink-600 mt-6 mb-3" {...props} />,
+                            h3: ({node, ...props}) => <h3 className="text-lg font-medium text-pink-500 mt-4 mb-2" {...props} />,
+                            ul: ({node, ...props}) => <ul className="list-disc pl-5 my-3" {...props} />,
+                            ol: ({node, ...props}) => <ol className="list-decimal pl-5 my-3" {...props} />,
+                            li: ({node, ...props}) => <li className="my-1" {...props} />,
+                            p: ({node, ...props}) => <p className="my-2" {...props} />,
+                            table: ({node, ...props}) => <div className="overflow-x-auto my-4"><table className="min-w-full divide-y divide-gray-200" {...props} /></div>,
+                            thead: ({node, ...props}) => <thead className="bg-gray-50" {...props} />,
+                            th: ({node, ...props}) => <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" {...props} />,
+                            td: ({node, ...props}) => <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500" {...props} />,
+                          }}
+                      >
+                        {plan.markdownPlan}
+                      </ReactMarkdown>
                       </div>
-                    </div>
-                    
-                    {/* Budget Section */}
-                    <div className="bg-purple-50/50 rounded-lg p-4">
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        Budget Breakdown
-                      </h3>
-                      <div className="text-gray-600 whitespace-pre-line">
-                        {typeof plan.budget === 'string' ? plan.budget : 'Budget information not available'}
+                    ) : (
+                      <div className="text-gray-700 markdown-content">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-pink-700 mb-4" {...props} />,
+                            h2: ({node, ...props}) => <h2 className="text-xl font-semibold text-pink-600 mt-6 mb-3" {...props} />,
+                            h3: ({node, ...props}) => <h3 className="text-lg font-medium text-pink-500 mt-4 mb-2" {...props} />,
+                            ul: ({node, ...props}) => <ul className="list-disc pl-5 my-3" {...props} />,
+                            ol: ({node, ...props}) => <ol className="list-decimal pl-5 my-3" {...props} />,
+                            li: ({node, ...props}) => <li className="my-1" {...props} />,
+                            p: ({node, ...props}) => <p className="my-2" {...props} />,
+                            table: ({node, ...props}) => <div className="overflow-x-auto my-4"><table className="min-w-full divide-y divide-gray-200" {...props} /></div>,
+                            thead: ({node, ...props}) => <thead className="bg-gray-50" {...props} />,
+                            th: ({node, ...props}) => <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" {...props} />,
+                            td: ({node, ...props}) => <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500" {...props} />,
+                          }}
+                        >
+                          {`# ${plan.initial_preferences?.weddingStyle || 'Custom'} Wedding Plan for ${plan.initial_preferences?.location || 'Your Location'}
+
+## Venue Recommendations
+${plan.venue || 'Venue information not available'}
+
+## Budget Breakdown
+${plan.budget || 'Budget information not available'}
+
+## Wedding Day Timeline
+${plan.timeline || 'Timeline information not available'}
+
+## Vendor Recommendations
+${plan.vendors || 'Vendor information not available'}
+
+## Decor & Theme
+${plan.decor || 'Decor information not available'}
+
+## Additional Recommendations
+${plan.recommendations || 'No additional recommendations'}`}
+                        </ReactMarkdown>
                       </div>
-                    </div>
-                    
-                    {/* Timeline Section */}
-                    <div className="bg-purple-50/50 rounded-lg p-4">
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        Timeline
-                      </h3>
-                      <div className="text-gray-600 whitespace-pre-line">
-                        {typeof plan.timeline === 'string' ? plan.timeline : 'Timeline information not available'}
-                      </div>
-                    </div>
-                    
-                    {/* Vendors Section */}
-                    <div className="bg-pink-50/50 rounded-lg p-4 col-span-2">
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        Recommended Vendors
-                      </h3>
-                      <div className="text-gray-600 whitespace-pre-line">
-                        {typeof plan.vendors === 'string' ? plan.vendors : 'Vendor information not available'}
-                      </div>
-                    </div>
-                    
-                    {/* Decor Section */}
-                    <div className="bg-pink-50/50 rounded-lg p-4">
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        Decor & Theme
-                      </h3>
-                      <div className="text-gray-600 whitespace-pre-line">
-                        {typeof plan.decor === 'string' ? plan.decor : 'Decor information not available'}
-                      </div>
-                    </div>
-                    
-                    {/* Recommendations Section */}
-                    <div className="bg-pink-50/50 rounded-lg p-4">
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        Additional Recommendations
-                      </h3>
-                      <div className="text-gray-600 whitespace-pre-line">
-                        {typeof plan.recommendations === 'string' ? plan.recommendations : 'No additional recommendations'}
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
                 {revisionsLeft > 0 && (
