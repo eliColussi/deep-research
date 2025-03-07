@@ -285,6 +285,10 @@ export default function DashboardPage() {
       // Complete the progress
       setResearchProgress({ stage: 'Plan completed!', percent: 100 });
 
+      // Log the markdown plan for debugging
+      console.log('Markdown plan content:', weddingPlan.markdownPlan ? 
+        `${weddingPlan.markdownPlan.substring(0, 100)}...` : 'No markdown plan');
+
       // Save the plan in the database (saveWeddingPlan now handles both insert and update)
       console.log('Saving wedding plan...');
       const saved = await saveWeddingPlan(user.id, weddingPlan, wizardData);

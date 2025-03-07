@@ -52,6 +52,60 @@ export async function POST(req: Request) {
         .replace(/\n-\s/g, '\n- ')
         // Trim whitespace
         .trim();
+        
+      // More aggressive deduplication of content
+      // First, extract the main title
+      const mainTitleMatch = content.match(/# [^\n]+/);
+      const mainTitle = mainTitleMatch ? mainTitleMatch[0] : '# Wedding Plan';
+      
+      // Extract all section titles and their content
+      const sections = new Map();
+      const sectionMatches = content.matchAll(/##\s+([^\n]+)([\s\S]*?)(?=##\s+|$)/g);
+      
+      for (const match of sectionMatches) {
+        const title = match[1].trim();
+        const content = match[2].trim();
+        
+        // Only keep the section with the most content if duplicates exist
+        if (!sections.has(title) || content.length > sections.get(title).length) {
+          sections.set(title, content);
+        }
+      }
+      
+      // Rebuild the content with unique sections
+      let cleanedContent = mainTitle + '\n\n';
+      
+      // Add Key Findings Summary first if it exists
+      if (sections.has('Key Findings Summary')) {
+        cleanedContent += '## Key Findings Summary\n' + sections.get('Key Findings Summary') + '\n\n';
+        sections.delete('Key Findings Summary');
+      }
+      
+      // Add remaining sections in a logical order
+      const sectionOrder = [
+        'Venue Recommendations',
+        'Vendor Recommendations',
+        'Wedding Day Timeline',
+        'Decor & Theme',
+        'Budget Breakdown',
+        'Additional Recommendations',
+        'Conclusion'
+      ];
+      
+      // First add sections in the preferred order
+      for (const sectionTitle of sectionOrder) {
+        if (sections.has(sectionTitle)) {
+          cleanedContent += '## ' + sectionTitle + '\n' + sections.get(sectionTitle) + '\n\n';
+          sections.delete(sectionTitle);
+        }
+      }
+      
+      // Then add any remaining sections
+      for (const [title, sectionContent] of sections.entries()) {
+        cleanedContent += '## ' + title + '\n' + sectionContent + '\n\n';
+      }
+      
+      content = cleanedContent.trim();
       
       // Ensure the content starts with a proper title if it doesn't already
       if (!content.startsWith('# ')) {
