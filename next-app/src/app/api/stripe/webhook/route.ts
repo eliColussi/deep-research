@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import Stripe from 'stripe';
 import { supabase } from '@/app/lib/supabaseClient';
+import { plans } from '@/stripe/Pricing';
 
 // Ensure these environment variables are available
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -87,7 +88,26 @@ export async function POST(req: Request) {
           // or just log a warning. Adjust to your business logic.
           console.warn(`No user_profile found for email: ${email}`);
         } else {
-          // Mark them as having a paid subscription
+          // Get the price IDs from the plans array or fall back to environment variables
+          const MONTHLY_PLAN_PRICE_ID = plans?.[0]?.priceId || process.env.STRIPE_MONTHLY_PRICE_ID || 'price_monthly'; // 'Essential' plan
+          const YEARLY_PLAN_PRICE_ID = plans?.[1]?.priceId || process.env.STRIPE_YEARLY_PRICE_ID || 'price_yearly'; // 'Premium' plan
+          
+          console.log('Monthly plan price ID:', MONTHLY_PLAN_PRICE_ID);
+          console.log('Yearly plan price ID:', YEARLY_PLAN_PRICE_ID);
+          console.log('Received price ID from Stripe:', priceId);
+          
+          // Determine credits to assign based on the plan
+          let creditsToAssign = 5; // Default for monthly plan
+          let planType = 'monthly';
+          
+          if (priceId === YEARLY_PLAN_PRICE_ID) {
+            creditsToAssign = 120; // Credits for yearly plan
+            planType = 'yearly';
+          }
+          
+          console.log(`Assigning ${creditsToAssign} credits for ${planType} plan (price ID: ${priceId})`);
+          
+          // Mark them as having a paid subscription and update their credits
           const { error: updateError } = await supabase
             .from('user_profiles')
             .update({
@@ -95,6 +115,7 @@ export async function POST(req: Request) {
               payment_date: new Date().toISOString(),
               // We store either the subscription ID (for subscription) or session ID
               payment_transaction_id: subscriptionId ?? session.id,
+              revisions_remaining: creditsToAssign
             })
             .eq('id', existingProfile.id);
 
@@ -103,7 +124,7 @@ export async function POST(req: Request) {
             throw new Error('Could not update user subscription');
           }
 
-          console.log(`✅ User ${email} subscription set to active.`);
+          console.log(`✅ User ${email} subscription set to active with ${creditsToAssign} credits for ${planType} plan.`);
         }
 
         break;
