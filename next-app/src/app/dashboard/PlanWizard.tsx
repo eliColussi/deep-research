@@ -14,7 +14,16 @@ import {
   Select,
   MenuItem,
   Paper,
+  Fade,
+  FormHelperText,
 } from '@mui/material';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import PeopleIcon from '@mui/icons-material/People';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import PaletteIcon from '@mui/icons-material/Palette';
+import ListAltIcon from '@mui/icons-material/ListAlt';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
 // Types for your plan data
 export interface PlanFormData {
@@ -29,11 +38,11 @@ export interface PlanFormData {
 }
 
 const steps = [
-  'Budget & Guests',
-  'Location & Dates',
-  'Theme & Style',
-  'Preferences',
-  'Review & Submit',
+  { label: 'Budget & Guests', icon: <AttachMoneyIcon />, subtitle: 'Set your spending limit and guest count' },
+  { label: 'Location & Dates', icon: <LocationOnIcon />, subtitle: 'Where and when is your special day?' },
+  { label: 'Theme & Style', icon: <PaletteIcon />, subtitle: 'Define the look and feel of your wedding' },
+  { label: 'Preferences', icon: <ListAltIcon />, subtitle: 'Tell us about your specific needs' },
+  { label: 'Review & Submit', icon: <PeopleIcon />, subtitle: 'Check everything before we create your plan' },
 ];
 
 interface MultiStepWeddingFormProps {
@@ -123,15 +132,25 @@ export default function MultiStepWeddingForm({
           },
           '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': {
             borderColor: '#ec4899', // rose-500
+            height: '3px',
           },
           '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': {
             borderColor: '#ec4899', // rose-500
           },
+          '& .MuiStepLabel-iconContainer': {
+            '& .Mui-active, & .Mui-completed': {
+              boxShadow: '0 0 10px rgba(236, 72, 153, 0.5)',
+              borderRadius: '50%',
+            }
+          }
         }}
       >
-        {steps.map((label) => (
-          <Step key={label}>
-            <StepLabel>{label}</StepLabel>
+        {steps.map((step) => (
+          <Step key={step.label}>
+            <StepLabel icon={step.icon}>
+              <Typography variant="body2" fontWeight="medium">{step.label}</Typography>
+              <Typography variant="caption" color="text.secondary">{step.subtitle}</Typography>
+            </StepLabel>
           </Step>
         ))}
       </Stepper>
@@ -178,9 +197,16 @@ export default function MultiStepWeddingForm({
           },
         }}
       >
-        {/* Step-specific content with relative positioning for z-index */}
-        <Box sx={{ position: 'relative', zIndex: 1 }}>
-          {renderStepContent(currentStep)}
+        {/* Step-specific content with fade transition */}
+        <Box sx={{ position: 'relative', zIndex: 1, minHeight: '300px' }}>
+          <Fade in={true} timeout={400} key={currentStep}>
+            <Box>
+              <Typography variant="h6" sx={{ mb: 3, color: 'rgb(219, 39, 119)', fontWeight: 'medium' }}>
+                {steps[currentStep]?.label} - {steps[currentStep]?.subtitle}
+              </Typography>
+              {renderStepContent(currentStep)}
+            </Box>
+          </Fade>
         </Box>
 
         {/* Enhanced Navigation Buttons */}
@@ -189,6 +215,7 @@ export default function MultiStepWeddingForm({
             <Button
               variant="outlined"
               onClick={prevStep}
+              startIcon={<ArrowBackIcon />}
               sx={{ 
                 mr: 'auto',
                 borderColor: 'rgba(236, 72, 153, 0.5)',
@@ -196,11 +223,12 @@ export default function MultiStepWeddingForm({
                 '&:hover': {
                   borderColor: 'rgb(219, 39, 119)',
                   backgroundColor: 'rgba(252, 231, 243, 0.1)',
+                  transform: 'translateX(-2px)',
                 },
                 px: 3,
                 py: 1,
                 borderRadius: 2,
-                transition: 'all 0.3s ease',
+                transition: 'all 0.2s ease',
               }}
             >
               Previous
@@ -210,6 +238,7 @@ export default function MultiStepWeddingForm({
             <Button
               variant="contained"
               onClick={nextStep}
+              endIcon={<ArrowForwardIcon />}
               sx={{ 
                 ml: 'auto',
                 background: 'linear-gradient(90deg, rgb(236, 72, 153), rgb(217, 70, 239))',
@@ -223,7 +252,7 @@ export default function MultiStepWeddingForm({
                 py: 1,
                 borderRadius: 2,
                 boxShadow: '0 4px 10px rgba(236, 72, 153, 0.2)',
-                transition: 'all 0.3s ease',
+                transition: 'all 0.2s ease',
               }}
             >
               Next
@@ -334,6 +363,7 @@ function StepBudgetGuests({
           <MenuItem value="30-50k">$30,000 - $50,000</MenuItem>
           <MenuItem value="50k+">$50,000+</MenuItem>
         </Select>
+        <FormHelperText>This helps us tailor recommendations within your price range</FormHelperText>
       </FormControl>
 
       <TextField
@@ -349,6 +379,7 @@ function StepBudgetGuests({
           }))
         }
         placeholder="E.g. 100"
+        helperText="Approximate number of guests (including yourselves)"
       />
     </Box>
   );
@@ -373,6 +404,7 @@ function StepLocationDates({
           setFormData((prev) => ({ ...prev, location: e.target.value }))
         }
         placeholder="City, State or Country"
+        helperText="Where you plan to hold your wedding"
       />
 
       <TextField
@@ -384,6 +416,7 @@ function StepLocationDates({
           setFormData((prev) => ({ ...prev, dateRange: e.target.value }))
         }
         placeholder="e.g. June 2025 or a specific date"
+        helperText="Approximate timeframe for your special day"
       />
     </Box>
   );
@@ -415,6 +448,7 @@ function StepThemeStyle({
           <MenuItem value="fall">Fall</MenuItem>
           <MenuItem value="winter">Winter</MenuItem>
         </Select>
+        <FormHelperText>Seasons influence venue availability, decor, and attire options</FormHelperText>
       </FormControl>
 
       <FormControl fullWidth>
@@ -433,6 +467,7 @@ function StepThemeStyle({
           <MenuItem value="modern">Modern</MenuItem>
           <MenuItem value="rustic">Rustic</MenuItem>
         </Select>
+        <FormHelperText>This defines the overall aesthetic of your wedding</FormHelperText>
       </FormControl>
     </Box>
   );
@@ -448,6 +483,10 @@ function StepPreferences({
 }) {
   return (
     <Box display="flex" flexDirection="column" gap={2}>
+      <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary' }}>
+        This is where you can share specific details that will make your wedding uniquely yours.
+      </Typography>
+      
       <FormControl fullWidth>
         <InputLabel id="palette-label">Color Palette</InputLabel>
         <Select
@@ -464,6 +503,7 @@ function StepPreferences({
           <MenuItem value="neutral">Neutral</MenuItem>
           <MenuItem value="dark">Dark</MenuItem>
         </Select>
+        <FormHelperText>Colors will influence decor, flowers, and attire recommendations</FormHelperText>
       </FormControl>
 
       <TextField
@@ -477,6 +517,7 @@ function StepPreferences({
           setFormData((prev) => ({ ...prev, preferences: e.target.value }))
         }
         placeholder="Tell us about your dream wedding..."
+        helperText="The more details you provide, the more personalized your wedding plan will be"
       />
     </Box>
   );
@@ -485,38 +526,63 @@ function StepPreferences({
 // -------------- Step 5: Review & Submit --------------
 function StepReview({ formData }: { formData: PlanFormData }) {
   return (
-    <Box display="flex" flexDirection="column" gap={2}>
-      <Typography variant="h6" gutterBottom>
-        Review Your Details
+    <Box display="flex" flexDirection="column" gap={3}>
+      <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary' }}>
+        Please review your information below. Our AI will use these details to create your personalized wedding plan.
       </Typography>
 
-      <Typography variant="body2">
-        <strong>Budget:</strong> {formData.budget}
-      </Typography>
-      <Typography variant="body2">
-        <strong>Guest Count:</strong> {formData.guestCount}
-      </Typography>
-      <Typography variant="body2">
-        <strong>Location:</strong> {formData.location}
-      </Typography>
-      <Typography variant="body2">
-        <strong>Date Range:</strong> {formData.dateRange}
-      </Typography>
-      <Typography variant="body2">
-        <strong>Preferred Season:</strong> {formData.season}
-      </Typography>
-      <Typography variant="body2">
-        <strong>Wedding Style:</strong> {formData.weddingStyle}
-      </Typography>
-      <Typography variant="body2">
-        <strong>Color Palette:</strong> {formData.colorPalette}
-      </Typography>
-      <Typography variant="body2">
-        <strong>Additional Preferences:</strong> {formData.preferences}
-      </Typography>
+      <Box sx={{ p: 2, borderLeft: '3px solid rgba(236, 72, 153, 0.5)', backgroundColor: 'rgba(252, 231, 243, 0.2)', borderRadius: 1 }}>
+        <Typography variant="subtitle1" fontWeight="bold" color="rgb(219, 39, 119)" gutterBottom>
+          Budget & Guests
+        </Typography>
+        <Typography variant="body2">
+          <strong>Budget:</strong> {formData.budget || 'Not specified'}
+        </Typography>
+        <Typography variant="body2">
+          <strong>Guest Count:</strong> {formData.guestCount || 'Not specified'}
+        </Typography>
+      </Box>
 
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-        If everything looks correct, click <strong>Submit</strong> to finish!
+      <Box sx={{ p: 2, borderLeft: '3px solid rgba(236, 72, 153, 0.5)', backgroundColor: 'rgba(252, 231, 243, 0.2)', borderRadius: 1 }}>
+        <Typography variant="subtitle1" fontWeight="bold" color="rgb(219, 39, 119)" gutterBottom>
+          Location & Dates
+        </Typography>
+        <Typography variant="body2">
+          <strong>Location:</strong> {formData.location || 'Not specified'}
+        </Typography>
+        <Typography variant="body2">
+          <strong>Date Range:</strong> {formData.dateRange || 'Not specified'}
+        </Typography>
+        <Typography variant="body2">
+          <strong>Preferred Season:</strong> {formData.season || 'Not specified'}
+        </Typography>
+      </Box>
+
+      <Box sx={{ p: 2, borderLeft: '3px solid rgba(236, 72, 153, 0.5)', backgroundColor: 'rgba(252, 231, 243, 0.2)', borderRadius: 1 }}>
+        <Typography variant="subtitle1" fontWeight="bold" color="rgb(219, 39, 119)" gutterBottom>
+          Theme & Style
+        </Typography>
+        <Typography variant="body2">
+          <strong>Wedding Style:</strong> {formData.weddingStyle || 'Not specified'}
+        </Typography>
+        <Typography variant="body2">
+          <strong>Color Palette:</strong> {formData.colorPalette || 'Not specified'}
+        </Typography>
+      </Box>
+
+      {formData.preferences && (
+        <Box sx={{ p: 2, borderLeft: '3px solid rgba(236, 72, 153, 0.5)', backgroundColor: 'rgba(252, 231, 243, 0.2)', borderRadius: 1 }}>
+          <Typography variant="subtitle1" fontWeight="bold" color="rgb(219, 39, 119)" gutterBottom>
+            Additional Preferences
+          </Typography>
+          <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', backgroundColor: 'rgba(255, 255, 255, 0.5)', p: 1, borderRadius: 1 }}>
+            {formData.preferences}
+          </Typography>
+        </Box>
+      )}
+
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
+        If everything looks correct, click <strong>Generate Wedding Plan</strong> to create your personalized plan!
       </Typography>
     </Box>
   );
