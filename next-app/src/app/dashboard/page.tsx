@@ -155,8 +155,11 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [researchProgress, setResearchProgress] = useState<{
     stage: string;
+    subtitle: string;
     percent: number;
-  }>({ stage: '', percent: 0 });
+    step: number;
+    totalSteps: number;
+  }>({ stage: '', subtitle: '', percent: 0, step: 0, totalSteps: 0 });
 
   // For any default wizard data you want to prefill
   const [formData, setFormData] = useState<PlanFormData>({
@@ -254,24 +257,114 @@ export default function DashboardPage() {
       // Save form data for potential future use
       setFormData(wizardData);
       
-      // Update research progress
-      setResearchProgress({ stage: 'Initializing research...', percent: 10 });
+      // Update research progress with initial state
+      setResearchProgress({ 
+        stage: 'Initializing research...', 
+        subtitle: 'Preparing to create your dream wedding plan',
+        percent: 5, 
+        step: 0,
+        totalSteps: 8
+      });
       
-      // Set up progress tracking with timeouts to simulate progress
+      // Set up detailed progress tracking with timeouts to simulate progress
       const progressStages = [
-        { stage: 'Gathering information...', percent: 25 },
-        { stage: 'Analyzing wedding venues...', percent: 40 },
-        { stage: 'Researching vendors...', percent: 55 },
-        { stage: 'Finding best deals...', percent: 70 },
-        { stage: 'Compiling recommendations...', percent: 85 },
-        { stage: 'Finalizing your plan...', percent: 95 }
+        { 
+          stage: 'Reviewing Your Budget & Guests', 
+          subtitle: 'Analyzing cost constraints and attendance requirements',
+          percent: 15, 
+          step: 1,
+          totalSteps: 8,
+          time: 3000
+        },
+        { 
+          stage: 'Scanning Venue Options', 
+          subtitle: 'Finding perfect locations that match your preferences',
+          percent: 28, 
+          step: 2,
+          totalSteps: 8,
+          time: 3500
+        },
+        { 
+          stage: 'Curating Vendor Lists', 
+          subtitle: 'Selecting top-rated photographers, caterers, and more',
+          percent: 42, 
+          step: 3,
+          totalSteps: 8,
+          time: 4000
+        },
+        { 
+          stage: 'Analyzing Seasonal Themes', 
+          subtitle: 'Matching your date with optimal seasonal elements',
+          percent: 55, 
+          step: 4,
+          totalSteps: 8,
+          time: 3200
+        },
+        { 
+          stage: 'Comparing Décor & Style Trends', 
+          subtitle: 'Researching current trends that match your aesthetic',
+          percent: 68, 
+          step: 5,
+          totalSteps: 8,
+          time: 3800
+        },
+        { 
+          stage: 'Drafting Your Wedding Day Timeline', 
+          subtitle: 'Creating the perfect schedule for your special day',
+          percent: 80, 
+          step: 6,
+          totalSteps: 8,
+          time: 3500
+        },
+        { 
+          stage: 'Finalizing All Recommendations', 
+          subtitle: 'Polishing every detail of your personalized plan',
+          percent: 92, 
+          step: 7,
+          totalSteps: 8,
+          time: 3000
+        },
+        { 
+          stage: 'Completing Your Wedding Plan', 
+          subtitle: 'Putting the finishing touches on your dream wedding',
+          percent: 98, 
+          step: 8,
+          totalSteps: 8,
+          time: 2000
+        }
       ];
       
-      // Simulate progress updates
-      progressStages.forEach((stage, index) => {
+      // Create a smoother progress animation
+      let currentPercent = 5;
+      const smoothProgressInterval = setInterval(() => {
+        // Increment by small amounts for smooth animation
+        currentPercent += 0.5;
+        if (currentPercent >= 98) {
+          clearInterval(smoothProgressInterval);
+        } else {
+          setResearchProgress(prev => ({
+            ...prev,
+            percent: currentPercent
+          }));
+        }
+      }, 300);
+      
+      // Simulate stage updates with more detailed information
+      let cumulativeTime = 0;
+      progressStages.forEach((stage) => {
+        cumulativeTime += stage.time;
         setTimeout(() => {
-          setResearchProgress(stage);
-        }, (index + 1) * 3000); // Update every 3 seconds
+          // Play a subtle sound effect when stage changes (optional)
+          // new Audio('/sounds/progress-chime.mp3').play().catch(e => console.log('Audio play failed:', e));
+          
+          setResearchProgress({
+            stage: stage.stage,
+            subtitle: stage.subtitle,
+            percent: stage.percent,
+            step: stage.step,
+            totalSteps: stage.totalSteps
+          });
+        }, cumulativeTime);
       });
       
       // Generate AI wedding plan with Perplexity Sonar
@@ -292,8 +385,17 @@ export default function DashboardPage() {
         markdownPlan: planResult.markdownPlan || ''
       };
       
-      // Complete the progress
-      setResearchProgress({ stage: 'Plan completed!', percent: 100 });
+      // Complete the progress with celebration state
+      setResearchProgress({ 
+        stage: 'Plan completed! ✨', 
+        subtitle: 'Your personalized wedding plan is ready to view',
+        percent: 100,
+        step: 8,
+        totalSteps: 8 
+      });
+      
+      // Clear any remaining intervals
+      clearInterval(smoothProgressInterval);
 
       // Log the markdown plan for debugging
       console.log('Markdown plan content:', weddingPlan.markdownPlan ? 
@@ -333,7 +435,13 @@ export default function DashboardPage() {
       setIsLoading(false);
       // Reset progress state after a delay to ensure smooth transition
       setTimeout(() => {
-        setResearchProgress({ stage: '', percent: 0 });
+        setResearchProgress({ 
+          stage: '', 
+          subtitle: '',
+          percent: 0,
+          step: 0,
+          totalSteps: 0
+        });
       }, 500);
     }
   }
@@ -439,46 +547,104 @@ export default function DashboardPage() {
               isLoading ? (
                 // Enhanced futuristic research progress indicator
                 <div className="flex flex-col items-center justify-center py-10 space-y-6">
-                  <div className="w-full max-w-md bg-white/90 backdrop-blur-sm rounded-lg shadow-md border border-rose-100 p-6 relative overflow-hidden">
-                    {/* Decorative elements */}
-                    <div className="absolute -right-12 -bottom-8 w-32 h-32 bg-gradient-to-br from-rose-100 to-purple-100 rounded-full opacity-50"></div>
-                    <div className="absolute left-12 -top-6 w-16 h-16 bg-gradient-to-br from-amber-100 to-rose-100 rounded-full opacity-50"></div>
+                  <div className="w-full max-w-md bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-rose-100 p-6 relative overflow-hidden transition-all duration-500">
+                    {/* Decorative elements with animation */}
+                    <div className="absolute -right-12 -bottom-8 w-32 h-32 bg-gradient-to-br from-rose-100 to-purple-100 rounded-full opacity-50 animate-pulse-slow"></div>
+                    <div className="absolute left-12 -top-6 w-16 h-16 bg-gradient-to-br from-amber-100 to-rose-100 rounded-full opacity-50 animate-float"></div>
+                    <div className="absolute right-20 top-10 w-4 h-4 bg-gradient-to-br from-pink-200 to-rose-300 rounded-full opacity-40 animate-float-delayed"></div>
                     
-                    <h3 className="text-xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-purple-600 mb-4 relative">
-                      {researchProgress.stage || 'Researching your perfect wedding...'}  
+                    {/* Progress step indicator */}
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="text-xs font-medium text-rose-500 bg-rose-50 px-2 py-1 rounded-full">
+                        Step {researchProgress.step} of {researchProgress.totalSteps}
+                      </div>
+                      <div className="text-xs font-medium text-indigo-500">
+                        {Math.round(researchProgress.percent)}%
+                      </div>
+                    </div>
+                    
+                    {/* Main heading with gradient text */}
+                    <h3 className="text-xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-purple-600 mb-1 relative transition-all duration-300">
+                      {researchProgress.stage || 'Researching your perfect wedding...'}
                     </h3>
                     
+                    {/* Subtitle with animation */}
+                    <p className="text-sm text-gray-600 mb-4 transition-all duration-300 animate-fade-in">
+                      {researchProgress.subtitle || 'Our AI is gathering information based on your preferences'}
+                    </p>
+                    
+                    {/* Enhanced progress bar with glow effect */}
                     <div className="w-full bg-gray-100 rounded-full h-3 mb-4 overflow-hidden relative">
+                      {/* Subtle background pattern */}
                       <div className="absolute inset-0 bg-gradient-to-r from-rose-200 to-purple-200 opacity-30"></div>
+                      
+                      {/* Animated gradient progress bar */}
                       <div 
-                        className="bg-gradient-to-r from-rose-400 to-purple-500 h-3 rounded-full transition-all duration-500 ease-in-out relative z-10 flex items-center justify-end" 
+                        className="bg-gradient-to-r from-rose-400 via-pink-500 to-purple-500 h-3 rounded-full transition-all duration-700 ease-out relative z-10 flex items-center justify-end shadow-inner" 
                         style={{ width: `${researchProgress.percent}%` }}
                       >
-                        {researchProgress.percent > 15 && (
-                          <span className="h-2 w-2 bg-white rounded-full mr-0.5 animate-pulse"></span>
+                        {/* Animated pulse dot at the end of progress */}
+                        {researchProgress.percent > 15 && researchProgress.percent < 100 && (
+                          <span className="h-2 w-2 bg-white rounded-full mr-0.5 animate-pulse shadow-sm"></span>
+                        )}
+                        
+                        {/* Celebration effect when complete */}
+                        {researchProgress.percent >= 100 && (
+                          <div className="absolute inset-0 bg-gradient-to-r from-rose-300 to-purple-300 opacity-50 animate-pulse-fast"></div>
                         )}
                       </div>
                     </div>
                     
-                    <p className="text-sm text-gray-600 mb-6 relative">
-                      Our AI is searching for venues, vendors, and ideas tailored to your preferences.
-                      This may take a few minutes as we gather detailed information.
-                    </p>
-                    
-                    <div className="flex items-center justify-center relative">
-                      <div className="flex space-x-3 items-center">
-                        <div className="h-2 w-2 bg-rose-400 rounded-full animate-ping"></div>
-                        <div className="h-2 w-2 bg-pink-500 rounded-full animate-ping" style={{ animationDelay: '0.3s' }}></div>
-                        <div className="h-2 w-2 bg-purple-500 rounded-full animate-ping" style={{ animationDelay: '0.6s' }}></div>
-                      </div>
+                    {/* Status message that updates with each stage */}
+                    <div className="bg-gradient-to-r from-rose-50 to-purple-50 p-3 rounded-lg mb-4 min-h-[60px] transition-all duration-300">
+                      <p className="text-sm text-gray-700 relative animate-fade-in">
+                        {researchProgress.percent < 100 ? (
+                          <>
+                            {researchProgress.step === 1 && "Analyzing your budget constraints and guest count to optimize recommendations..."}
+                            {researchProgress.step === 2 && "Searching for the perfect venues that match your location preferences and style..."}
+                            {researchProgress.step === 3 && "Finding top-rated vendors with availability during your preferred dates..."}
+                            {researchProgress.step === 4 && "Exploring seasonal themes and weather patterns for your wedding date..."}
+                            {researchProgress.step === 5 && "Researching current décor trends that align with your chosen color palette..."}
+                            {researchProgress.step === 6 && "Creating a personalized timeline to ensure your wedding day flows perfectly..."}
+                            {researchProgress.step === 7 && "Finalizing all recommendations and ensuring they fit within your budget..."}
+                            {researchProgress.step === 8 && "Putting the finishing touches on your comprehensive wedding plan..."}
+                            {researchProgress.step === 0 && "Preparing to create your personalized wedding plan based on your preferences..."}
+                          </>
+                        ) : (
+                          <span className="font-medium text-rose-600">Your wedding plan is ready to view! <span className="animate-bounce inline-block">🎉</span></span>
+                        )}
+                      </p>
                     </div>
+                    
+                    {/* Animated loading indicators */}
+                    {researchProgress.percent < 100 ? (
+                      <div className="flex items-center justify-center relative py-2">
+                        <div className="flex space-x-3 items-center">
+                          <div className="h-2 w-2 bg-rose-400 rounded-full animate-ping"></div>
+                          <div className="h-2 w-2 bg-pink-500 rounded-full animate-ping" style={{ animationDelay: '0.3s' }}></div>
+                          <div className="h-2 w-2 bg-purple-500 rounded-full animate-ping" style={{ animationDelay: '0.6s' }}></div>
+                          <div className="h-2 w-2 bg-indigo-400 rounded-full animate-ping" style={{ animationDelay: '0.9s' }}></div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center relative py-2">
+                        <div className="text-lg animate-bounce">✨</div>
+                      </div>
+                    )}
                   </div>
                   
-                  <div className="text-sm text-gray-500 italic flex items-center">
+                  {/* Info text below the card */}
+                  <div className="text-sm text-gray-500 italic flex items-center bg-white/70 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-rose-400" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
-                    We're using real-time data to create the most up-to-date plan for you.
+                    {researchProgress.percent < 50 ? (
+                      "We're gathering real-time data to create the most up-to-date plan for you."
+                    ) : researchProgress.percent < 90 ? (
+                      "Our AI is analyzing thousands of options to find the perfect match for your dream wedding."
+                    ) : (
+                      "Almost there! We're putting the finishing touches on your personalized wedding plan."
+                    )}
                   </div>
                 </div>
               ) : (
