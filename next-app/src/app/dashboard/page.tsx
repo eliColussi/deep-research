@@ -69,28 +69,7 @@ function SideNav({
           Wedding Planner AI
         </h1>
 
-        {/* “Add New” button */}
-        <button
-          className="
-            w-full
-            py-2
-            px-4
-            bg-black
-            text-white
-            rounded-lg
-            flex
-            items-center
-            justify-center
-            gap-2
-            mb-8
-            hover:bg-gray-900
-            transition-colors
-            duration-200
-            shadow
-          "
-        >
-          + Add New
-        </button>
+        
 
         {/* “Dashboard 12” item */}
         <div className="flex items-center gap-2 mb-4">
