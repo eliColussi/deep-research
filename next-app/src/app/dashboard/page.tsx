@@ -19,6 +19,21 @@ import { generateWeddingPlan } from '@/utils/ai/perplexityClient';
 import SubscriptionButton from './SubscriptionButton';
 import PlanWizard from './PlanWizard'; // <-- Your multi-step wizard
 
+// Design system colors - Futuristic wedding palette
+const colors = {
+  primary: 'from-rose-400 to-pink-600', // Gradient for primary elements
+  secondary: 'from-purple-400 to-indigo-500', // Gradient for secondary elements
+  accent: 'text-amber-500', // Accent color for highlights
+  background: 'bg-gradient-to-br from-rose-50 to-indigo-50', // Subtle background gradient
+  card: 'bg-white/80', // Semi-transparent card background
+  text: {
+    primary: 'text-gray-800',
+    secondary: 'text-gray-600',
+    muted: 'text-gray-400',
+  },
+  border: 'border-rose-100',
+};
+
 // ------------------ Side Navigation ------------------ //
 function SideNav({
   user,
@@ -37,9 +52,10 @@ function SideNav({
         left-0
         h-screen
         w-64
-        bg-white
+        bg-white/90
+        backdrop-blur-md
         shadow-xl
-        border-r border-gray-200
+        border-r border-rose-100
         p-6
         flex
         flex-col
@@ -48,8 +64,8 @@ function SideNav({
       "
     >
       <div>
-        {/* Move brand to side nav (top-left) */}
-        <h1 className="text-2xl font-extrabold text-gray-800 mb-8 tracking-tight">
+        {/* Brand with gradient text */}
+        <h1 className="text-2xl font-extrabold mb-8 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-pink-600">
           Wedding Planner AI
         </h1>
 
@@ -84,23 +100,35 @@ function SideNav({
           </span>
         </div>
 
-        {/* AI Assistant ✨ button with gradient border */}
-        <div className="bg-gradient-to-r from-pink-500 to-purple-500 p-[1px] rounded-lg">
+        {/* AI Assistant ✨ button with glassmorphism effect */}
+        <div className="bg-gradient-to-r from-rose-400 to-purple-500 p-[1px] rounded-lg shadow-lg overflow-hidden">
           <button
             className="
               w-full
               rounded-md
-              bg-white
-              py-2
+              bg-white/90
+              backdrop-blur-sm
+              py-3
               px-4
               text-sm
-              text-gray-700
               font-medium
-              hover:bg-gray-50
-              transition
+              text-transparent
+              bg-clip-text
+              bg-gradient-to-r
+              from-rose-500
+              to-purple-600
+              hover:bg-white/70
+              transition-all
+              duration-300
+              flex
+              items-center
+              justify-center
+              gap-2
             "
           >
-            AI Assistant ✨
+            <span className="animate-pulse text-lg">✨</span>
+            <span>AI Assistant</span>
+            <span className="animate-pulse text-lg">✨</span>
           </button>
         </div>
       </div>
@@ -109,7 +137,7 @@ function SideNav({
       <div className="mt-auto">
         <button
           onClick={onSignOut}
-          className="w-full py-2 px-4 mb-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-colors duration-200"
+          className="w-full py-2 px-4 mb-6 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-all duration-300 hover:shadow-md"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -117,9 +145,12 @@ function SideNav({
           Sign Out
         </button>
         
-        {/* Bottom Section: user info */}
-        <div className="flex items-center gap-3">
-          {/* Example avatar (replace with real user image if you have it) */}
+        {/* Bottom Section: user info with glassmorphism effect */}
+        <div className="flex items-center gap-3 p-3 bg-white/60 backdrop-blur-sm rounded-lg border border-rose-100">
+          {/* User avatar with gradient border */}
+          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-rose-400 to-pink-600 flex items-center justify-center text-white font-bold">
+            {user?.user_metadata?.name?.[0] || user?.email?.[0] || 'U'}
+          </div>
           
           <div className="leading-tight">
             <div className="text-sm font-semibold text-gray-800">
@@ -347,11 +378,19 @@ export default function DashboardPage() {
       />
 
       {/* Main content area, margin-left to accommodate side nav */}
-      <div className="ml-64 min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
+      <div className={`ml-64 min-h-screen ${colors.background} font-sans`}>
         {/* Minimal Header without sign out button */}
-        <header className="border-b border-pink-100 bg-white/50 backdrop-blur-sm">
-          <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-end">
-            {/* Header content if needed */}
+        <header className={`border-b ${colors.border} bg-white/50 backdrop-blur-sm sticky top-0 z-10`}>
+          <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-pink-600">Wedding Planner</h2>
+            <div className="flex items-center space-x-3">
+              {/* User settings button */}
+              <button className="p-2 rounded-full hover:bg-white/70 transition-all duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
           </div>
         </header>
 
@@ -402,49 +441,64 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Revisions Counter */}
-          <div className="bg-white/50 backdrop-blur-sm rounded-full px-4 py-2 inline-block">
-            <p className="text-sm text-gray-600">
-              Revisions remaining:{' '}
-              <span className="font-semibold text-purple-600">
+          {/* Revisions Counter with glassmorphism effect */}
+          <div className="bg-white/60 backdrop-blur-sm rounded-full px-5 py-2.5 inline-flex items-center shadow-sm border border-rose-100 hover:shadow-md transition-all duration-300">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-rose-500" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+            </svg>
+            <p className="text-sm">
+              <span className="text-gray-600">Revisions remaining: </span>
+              <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-purple-600">
                 {revisionsLeft} of 2
               </span>
             </p>
           </div>
 
           {/* If user has no plan, show wizard; else show plan */}
-          <div className="bg-white rounded-2xl shadow-sm border border-pink-100 p-8">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-rose-100 p-8 hover:shadow-md transition-all duration-300">
             {!plan ? (
               isLoading ? (
-                // Research progress indicator
+                // Enhanced futuristic research progress indicator
                 <div className="flex flex-col items-center justify-center py-10 space-y-6">
-                  <div className="w-full max-w-md bg-white rounded-lg shadow-sm border border-pink-100 p-6">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                  <div className="w-full max-w-md bg-white/90 backdrop-blur-sm rounded-lg shadow-md border border-rose-100 p-6 relative overflow-hidden">
+                    {/* Decorative elements */}
+                    <div className="absolute -right-12 -bottom-8 w-32 h-32 bg-gradient-to-br from-rose-100 to-purple-100 rounded-full opacity-50"></div>
+                    <div className="absolute left-12 -top-6 w-16 h-16 bg-gradient-to-br from-amber-100 to-rose-100 rounded-full opacity-50"></div>
+                    
+                    <h3 className="text-xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-purple-600 mb-4 relative">
                       {researchProgress.stage || 'Researching your perfect wedding...'}  
                     </h3>
                     
-                    <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                    <div className="w-full bg-gray-100 rounded-full h-3 mb-4 overflow-hidden relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-rose-200 to-purple-200 opacity-30"></div>
                       <div 
-                        className="bg-gradient-to-r from-pink-400 to-purple-500 h-2.5 rounded-full transition-all duration-500 ease-in-out" 
+                        className="bg-gradient-to-r from-rose-400 to-purple-500 h-3 rounded-full transition-all duration-500 ease-in-out relative z-10 flex items-center justify-end" 
                         style={{ width: `${researchProgress.percent}%` }}
-                      ></div>
+                      >
+                        {researchProgress.percent > 15 && (
+                          <span className="h-2 w-2 bg-white rounded-full mr-0.5 animate-pulse"></span>
+                        )}
+                      </div>
                     </div>
                     
-                    <p className="text-sm text-gray-600 mb-6">
+                    <p className="text-sm text-gray-600 mb-6 relative">
                       Our AI is searching for venues, vendors, and ideas tailored to your preferences.
                       This may take a few minutes as we gather detailed information.
                     </p>
                     
-                    <div className="flex items-center justify-center">
-                      <div className="animate-pulse flex space-x-4 items-center">
-                        <div className="h-3 w-3 bg-pink-400 rounded-full"></div>
-                        <div className="h-3 w-3 bg-pink-500 rounded-full"></div>
-                        <div className="h-3 w-3 bg-pink-600 rounded-full"></div>
+                    <div className="flex items-center justify-center relative">
+                      <div className="flex space-x-3 items-center">
+                        <div className="h-2 w-2 bg-rose-400 rounded-full animate-ping"></div>
+                        <div className="h-2 w-2 bg-pink-500 rounded-full animate-ping" style={{ animationDelay: '0.3s' }}></div>
+                        <div className="h-2 w-2 bg-purple-500 rounded-full animate-ping" style={{ animationDelay: '0.6s' }}></div>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="text-sm text-gray-500 italic">
+                  <div className="text-sm text-gray-500 italic flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-rose-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
                     We're using real-time data to create the most up-to-date plan for you.
                   </div>
                 </div>
@@ -457,31 +511,41 @@ export default function DashboardPage() {
                 />
               )
             ) : (
-              // Show existing plan
+              // Show existing plan with enhanced futuristic design
               <div className="space-y-6">
                 <div className="prose prose-pink max-w-none">
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+                  <h2 className="text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-purple-600 mb-6 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-rose-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+                    </svg>
                     Your Wedding Plan
                   </h2>
                   
-                  {/* Display the entire wedding plan as formatted markdown */}
-                  <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-                    {plan.markdownPlan ? (
+                  {/* Display the entire wedding plan as formatted markdown with glassmorphism */}
+                  <div className="bg-white/90 backdrop-blur-sm rounded-lg p-8 shadow-md border border-rose-100 relative overflow-hidden">
+                    {/* Decorative elements */}
+                    <div className="absolute -right-16 -top-16 w-48 h-48 bg-gradient-to-br from-rose-100 to-purple-100 rounded-full opacity-30"></div>
+                    <div className="absolute -left-8 -bottom-8 w-32 h-32 bg-gradient-to-tr from-amber-100 to-rose-100 rounded-full opacity-30"></div>
+                    <div className="relative z-10">
+                    {plan?.markdownPlan ? (
                       <div className="text-gray-700 markdown-content">
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
                           components={{
-                            h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-pink-700 mb-4" {...props} />,
-                            h2: ({node, ...props}) => <h2 className="text-xl font-semibold text-pink-600 mt-6 mb-3" {...props} />,
-                            h3: ({node, ...props}) => <h3 className="text-lg font-medium text-pink-500 mt-4 mb-2" {...props} />,
-                            ul: ({node, ...props}) => <ul className="list-disc pl-5 my-3" {...props} />,
-                            ol: ({node, ...props}) => <ol className="list-decimal pl-5 my-3" {...props} />,
+                            h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-purple-600 mb-6" {...props} />,
+                            h2: ({node, ...props}) => <h2 className="text-xl font-semibold text-rose-600 mt-8 mb-4 pb-2 border-b border-rose-100" {...props} />,
+                            h3: ({node, ...props}) => <h3 className="text-lg font-medium text-rose-500 mt-6 mb-3" {...props} />,
+                            ul: ({node, ...props}) => <ul className="list-disc pl-5 my-4 space-y-2" {...props} />,
+                            ol: ({node, ...props}) => <ol className="list-decimal pl-5 my-4 space-y-2" {...props} />,
                             li: ({node, ...props}) => <li className="my-1" {...props} />,
-                            p: ({node, ...props}) => <p className="my-2" {...props} />,
-                            table: ({node, ...props}) => <div className="overflow-x-auto my-4"><table className="min-w-full divide-y divide-gray-200" {...props} /></div>,
-                            thead: ({node, ...props}) => <thead className="bg-gray-50" {...props} />,
-                            th: ({node, ...props}) => <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" {...props} />,
-                            td: ({node, ...props}) => <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500" {...props} />,
+                            p: ({node, ...props}) => <p className="my-3 text-gray-600" {...props} />,
+                            table: ({node, ...props}) => <div className="overflow-x-auto my-6 rounded-lg border border-rose-100 shadow-sm"><table className="min-w-full divide-y divide-rose-100" {...props} /></div>,
+                            thead: ({node, ...props}) => <thead className="bg-rose-50" {...props} />,
+                            th: ({node, ...props}) => <th className="px-4 py-3 text-left text-xs font-medium text-rose-600 uppercase tracking-wider" {...props} />,
+                            td: ({node, ...props}) => <td className="px-4 py-3 text-sm text-gray-600 border-t border-rose-50" {...props} />,
+                            a: ({node, ...props}) => <a className="text-rose-500 hover:text-rose-700 underline transition-colors duration-200" {...props} />,
+                            blockquote: ({node, ...props}) => <blockquote className="pl-4 border-l-4 border-rose-200 italic text-gray-600 my-4" {...props} />,
+                            code: ({node, ...props}) => <code className="bg-gray-50 text-rose-600 px-1 py-0.5 rounded text-sm" {...props} />,
                           }}
                       >
                         {plan.markdownPlan}
@@ -492,41 +556,45 @@ export default function DashboardPage() {
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
                           components={{
-                            h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-pink-700 mb-4" {...props} />,
-                            h2: ({node, ...props}) => <h2 className="text-xl font-semibold text-pink-600 mt-6 mb-3" {...props} />,
-                            h3: ({node, ...props}) => <h3 className="text-lg font-medium text-pink-500 mt-4 mb-2" {...props} />,
-                            ul: ({node, ...props}) => <ul className="list-disc pl-5 my-3" {...props} />,
-                            ol: ({node, ...props}) => <ol className="list-decimal pl-5 my-3" {...props} />,
+                            h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-purple-600 mb-6" {...props} />,
+                            h2: ({node, ...props}) => <h2 className="text-xl font-semibold text-rose-600 mt-8 mb-4 pb-2 border-b border-rose-100" {...props} />,
+                            h3: ({node, ...props}) => <h3 className="text-lg font-medium text-rose-500 mt-6 mb-3" {...props} />,
+                            ul: ({node, ...props}) => <ul className="list-disc pl-5 my-4 space-y-2" {...props} />,
+                            ol: ({node, ...props}) => <ol className="list-decimal pl-5 my-4 space-y-2" {...props} />,
                             li: ({node, ...props}) => <li className="my-1" {...props} />,
-                            p: ({node, ...props}) => <p className="my-2" {...props} />,
-                            table: ({node, ...props}) => <div className="overflow-x-auto my-4"><table className="min-w-full divide-y divide-gray-200" {...props} /></div>,
-                            thead: ({node, ...props}) => <thead className="bg-gray-50" {...props} />,
-                            th: ({node, ...props}) => <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" {...props} />,
-                            td: ({node, ...props}) => <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500" {...props} />,
+                            p: ({node, ...props}) => <p className="my-3 text-gray-600" {...props} />,
+                            table: ({node, ...props}) => <div className="overflow-x-auto my-6 rounded-lg border border-rose-100 shadow-sm"><table className="min-w-full divide-y divide-rose-100" {...props} /></div>,
+                            thead: ({node, ...props}) => <thead className="bg-rose-50" {...props} />,
+                            th: ({node, ...props}) => <th className="px-4 py-3 text-left text-xs font-medium text-rose-600 uppercase tracking-wider" {...props} />,
+                            td: ({node, ...props}) => <td className="px-4 py-3 text-sm text-gray-600 border-t border-rose-50" {...props} />,
+                            a: ({node, ...props}) => <a className="text-rose-500 hover:text-rose-700 underline transition-colors duration-200" {...props} />,
+                            blockquote: ({node, ...props}) => <blockquote className="pl-4 border-l-4 border-rose-200 italic text-gray-600 my-4" {...props} />,
+                            code: ({node, ...props}) => <code className="bg-gray-50 text-rose-600 px-1 py-0.5 rounded text-sm" {...props} />,
                           }}
                         >
-                          {`# ${plan.initial_preferences?.weddingStyle || 'Custom'} Wedding Plan for ${plan.initial_preferences?.location || 'Your Location'}
+                          {`# ${plan?.initial_preferences?.weddingStyle || 'Custom'} Wedding Plan for ${plan?.initial_preferences?.location || 'Your Location'}
 
 ## Venue Recommendations
-${plan.venue || 'Venue information not available'}
+${plan?.venue || 'Venue information not available'}
 
 ## Budget Breakdown
-${plan.budget || 'Budget information not available'}
+${plan?.budget || 'Budget information not available'}
 
 ## Wedding Day Timeline
-${plan.timeline || 'Timeline information not available'}
+${plan?.timeline || 'Timeline information not available'}
 
 ## Vendor Recommendations
-${plan.vendors || 'Vendor information not available'}
+${plan?.vendors || 'Vendor information not available'}
 
 ## Decor & Theme
-${plan.decor || 'Decor information not available'}
+${plan?.decor || 'Decor information not available'}
 
 ## Additional Recommendations
-${plan.recommendations || 'No additional recommendations'}`}
+${plan?.recommendations || 'No additional recommendations'}`}
                         </ReactMarkdown>
                       </div>
                     )}
+                    </div>
                   </div>
                 </div>
                 {revisionsLeft > 0 && (
@@ -536,18 +604,24 @@ ${plan.recommendations || 'No additional recommendations'}`}
                       w-full
                       rounded-lg
                       border
-                      border-pink-200
-                      bg-white
+                      border-rose-200
+                      bg-white/90
+                      backdrop-blur-sm
                       px-6 py-3
-                      text-pink-600
+                      text-transparent
+                      bg-clip-text
+                      bg-gradient-to-r
+                      from-rose-500
+                      to-purple-600
                       font-medium
-                      hover:bg-pink-50
+                      hover:bg-rose-50
+                      hover:shadow-md
                       focus:outline-none
                       focus:ring-2
-                      focus:ring-pink-500
+                      focus:ring-rose-500
                       focus:ring-offset-2
                       transition-all
-                      duration-200
+                      duration-300
                     "
                   >
                     Request a Revision
