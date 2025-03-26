@@ -21,6 +21,8 @@ export interface Database {
           payment_transaction_id: string | null
           plans_generated: number
           revisions_remaining: number
+          pro_plan_active: boolean
+          plan_type: string | null
         }
         Insert: {
           id: string
@@ -33,6 +35,8 @@ export interface Database {
           payment_transaction_id?: string | null
           plans_generated?: number
           revisions_remaining?: number
+          pro_plan_active?: boolean
+          plan_type?: string | null
         }
         Update: {
           id?: string
@@ -45,6 +49,8 @@ export interface Database {
           payment_transaction_id?: string | null
           plans_generated?: number
           revisions_remaining?: number
+          pro_plan_active?: boolean
+          plan_type?: string | null
         }
       }
       wedding_plans: {

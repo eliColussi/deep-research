@@ -38,10 +38,12 @@ const colors = {
 function SideNav({
   user,
   paymentConfirmed,
+  planType,
   onSignOut,
 }: {
   user: any;
   paymentConfirmed: boolean;
+  planType: string | null;
   onSignOut: () => void;
 }) {
   return (
@@ -65,9 +67,22 @@ function SideNav({
     >
       <div>
         {/* Brand with gradient text */}
-        <h1 className="text-2xl font-extrabold mb-8 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-pink-600">
+        <h1 className="text-2xl font-extrabold mb-4 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-pink-600">
           Wedding Planner AI
         </h1>
+        
+        {paymentConfirmed && (
+          <div className="flex items-center space-x-2 mb-4">
+            <span className="px-2 py-1 bg-gradient-to-r from-amber-400 to-amber-500 text-white rounded-full text-xs font-semibold shadow-sm">
+              Pro
+            </span>
+            {planType && (
+              <span className="text-sm text-gray-700">
+                {planType === 'annual' ? 'Annual Plan' : 'Monthly Plan'}
+              </span>
+            )}
+          </div>
+        )}
 
         
 
@@ -151,6 +166,7 @@ export default function DashboardPage() {
   const [revisionsLeft, setRevisionsLeft] = useState(2);
   const [plan, setPlan] = useState<WeddingPlan | null>(null);
   const [paymentConfirmed, setPaymentConfirmed] = useState<boolean>(false);
+  const [planType, setPlanType] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [researchProgress, setResearchProgress] = useState<{
@@ -210,9 +226,17 @@ export default function DashboardPage() {
         setUser(currentUser);
         setRevisionsLeft(profile.revisions_remaining ?? 2);
 
-        // If user has paid
-        if (profile.payment_confirmed) {
+        // Check for pro plan status
+        if (profile.payment_confirmed || profile.pro_plan_active) {
           setPaymentConfirmed(true);
+          setRevisionsLeft(profile.revisions_remaining);
+          setPlanType(profile.plan_type);
+          console.log(`User has active ${profile.plan_type} plan with ${profile.revisions_remaining} credits remaining`);
+        } else {
+          // Reset pro plan status if subscription was canceled
+          setPaymentConfirmed(false);
+          setPlanType(null);
+          console.log('User does not have an active pro plan');
         }
 
         // Check for existing plan
@@ -234,6 +258,49 @@ export default function DashboardPage() {
     };
 
     checkUser();
+    
+    // Set up real-time subscription for user profile updates
+    // This will update the UI immediately when a payment is processed
+    const setupProfileSubscription = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !session.user) return;
+      
+      const subscription = supabase
+        .channel(`public:user_profiles:id=eq.${session.user.id}`)
+        .on('postgres_changes', { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'user_profiles',
+          filter: `id=eq.${session.user.id}`
+        }, payload => {
+          const updatedProfile = payload.new;
+          console.log('Profile updated via subscription:', updatedProfile);
+          
+          // Update UI with new profile data
+          if (updatedProfile.pro_plan_active) {
+            setPaymentConfirmed(true);
+            setRevisionsLeft(updatedProfile.revisions_remaining);
+            setPlanType(updatedProfile.plan_type);
+            console.log(`Plan updated: ${updatedProfile.plan_type} with ${updatedProfile.revisions_remaining} credits`);
+          } else {
+            setPaymentConfirmed(false);
+            setPlanType(null);
+          }
+        })
+        .subscribe();
+      
+      // Return cleanup function
+      return () => {
+        supabase.removeChannel(subscription);
+      };
+    };
+    
+    const subscriptionPromise = setupProfileSubscription();
+    return () => {
+      subscriptionPromise.then(cleanup => {
+        if (cleanup) cleanup();
+      });
+    };
   }, [router]);
 
   // ------------------ handleWizardFinalSubmit: Called by PlanWizard on final step ------------------ //
@@ -454,7 +521,8 @@ export default function DashboardPage() {
       {/* Fixed side nav */}
       <SideNav 
         user={user} 
-        paymentConfirmed={paymentConfirmed} 
+        paymentConfirmed={paymentConfirmed}
+        planType={planType} 
         onSignOut={() => {
           // Sign out the user
           supabase.auth.signOut().then(() => {
@@ -497,7 +565,11 @@ export default function DashboardPage() {
                   Get access to premium features and unlimited revisions
                 </p>
               </div>
-              <SubscriptionButton user={user} />
+              <SubscriptionButton 
+                user={user} 
+                planType={planType}
+                revisionsLeft={revisionsLeft}
+              />
             </div>
           </div>
         )}

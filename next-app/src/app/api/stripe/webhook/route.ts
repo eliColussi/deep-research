@@ -97,12 +97,12 @@ export async function POST(req: Request) {
           console.log('Received price ID from Stripe:', priceId);
           
           // Determine credits to assign based on the plan
-          let creditsToAssign = 5; // Default for monthly plan
+          let creditsToAssign = 10; // Default for monthly plan
           let planType = 'monthly';
           
           if (priceId === YEARLY_PLAN_PRICE_ID) {
-            creditsToAssign = 120; // Credits for yearly plan
-            planType = 'yearly';
+            creditsToAssign = 130; // Credits for annual plan
+            planType = 'annual';
           }
           
           console.log(`Assigning ${creditsToAssign} credits for ${planType} plan (price ID: ${priceId})`);
@@ -112,6 +112,8 @@ export async function POST(req: Request) {
             .from('user_profiles')
             .update({
               payment_confirmed: true,
+              pro_plan_active: true,        // New field: mark as pro
+              plan_type: planType,          // New field: set plan type
               payment_date: new Date().toISOString(),
               // We store either the subscription ID (for subscription) or session ID
               payment_transaction_id: subscriptionId ?? session.id,
@@ -153,6 +155,8 @@ export async function POST(req: Request) {
           .from('user_profiles')
           .update({
             payment_confirmed: false,
+            pro_plan_active: false,      // Update pro status
+            plan_type: null,             // Clear plan type
             payment_transaction_id: null,
           })
           .eq('id', existingProfile.id);
