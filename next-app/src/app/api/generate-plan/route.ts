@@ -20,6 +20,7 @@ function cleanMarkdownContent(markdown: string): string {
     const title = match[1] ? match[1].trim() : '';
     const content = match[2] ? match[2].trim() : '';
     
+    
     // Skip empty titles
     if (!title) continue;
     
